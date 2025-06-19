@@ -35,17 +35,14 @@ import { omitUndefined } from "~/utils/omit-undefined.utils";
 import { orderBy } from "~/utils/order-by.utils";
 import { adjust } from "~/utils/safe-math.utils";
 import { stringify } from "~/utils/query-string.utils";
+import { request } from "~/utils/request.utils";
 
 export const fetchBybitMarkets = async (config: ExchangeConfig) => {
-  const response = await retry(() =>
-    fetch(
-      `${config.PUBLIC_API_URL}${BYBIT_ENDPOINTS.PUBLIC.MARKETS}?category=linear&limit=1000`,
-    ),
-  );
-
   const {
     result: { list },
-  }: { result: { list: BybitInstrument[] } } = await response.json();
+  } = await request<{ result: { list: BybitInstrument[] } }>({
+    url: `${config.PUBLIC_API_URL}${BYBIT_ENDPOINTS.PUBLIC.MARKETS}?category=linear&limit=1000`,
+  });
 
   const markets: Record<string, Market> = list.reduce(
     (acc, market) => {
@@ -91,15 +88,11 @@ export const fetchBybitTickers = async ({
   config: ExchangeConfig;
   markets?: Record<string, Market>;
 }) => {
-  const response = await retry(() =>
-    fetch(
-      `${config.PUBLIC_API_URL}${BYBIT_ENDPOINTS.PUBLIC.TICKERS}?category=linear&limit=1000`,
-    ),
-  );
-
   const {
     result: { list },
-  }: { result: { list: BybitTicker[] } } = await response.json();
+  } = await request<{ result: { list: BybitTicker[] } }>({
+    url: `${config.PUBLIC_API_URL}${BYBIT_ENDPOINTS.PUBLIC.TICKERS}?category=linear&limit=1000`,
+  });
 
   const tickers: Record<string, Ticker> = list.reduce(
     (acc, t) => {
