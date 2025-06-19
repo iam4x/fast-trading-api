@@ -153,7 +153,7 @@ export const fetchBinanceAccount = async ({
   };
 
   const positions: Position[] = data.positions.map((p) => {
-    const entryPrice = parseFloat(getKV(p, "entryprice"));
+    const entryPrice = parseFloat(getKV(p, "entryPrice"));
     const contracts = parseFloat(getKV(p, "positionAmt"));
     const upnl = parseFloat(getKV(p, "unrealizedProfit"));
     const pSide = getKV(p, "positionSide");
@@ -173,7 +173,7 @@ export const fetchBinanceAccount = async ({
       upnl,
       rpnl: 0,
       contracts: Math.abs(contracts),
-      liquidationPrice: parseFloat(getKV(p, "liquidationPrice")),
+      liquidationPrice: 0,
     };
   });
 

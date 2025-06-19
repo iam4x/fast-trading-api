@@ -112,5 +112,24 @@ export type BinanceAccount = {
   availableBalance: string;
   totalInitialMargin: string;
   totalUnrealizedProfit: string;
-  positions: Array<Record<string, any>>;
+  positions: Array<{
+    symbol: string;
+    initialMargin: string;
+    maintMargin: string;
+    unrealizedProfit: string;
+    positionInitialMargin: string;
+    openOrderInitialMargin: string;
+    leverage: string;
+    isolated: boolean;
+    entryPrice: string;
+    breakEvenPrice: string;
+    maxNotional: string;
+    positionSide: "LONG" | "SHORT" | "BOTH";
+    positionAmt: string;
+    notional: string;
+    isolatedWallet: string;
+    updateTime: number;
+    bidNotional: string;
+    askNotional: string;
+  }>;
 };
