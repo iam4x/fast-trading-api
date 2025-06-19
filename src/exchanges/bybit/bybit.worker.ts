@@ -78,6 +78,11 @@ export class BybitWorker extends BaseWorker {
       this.tradingWs[key].stop();
       delete this.tradingWs[key];
     }
+
+    for (const key in this.pollBalanceTimeouts) {
+      clearTimeout(this.pollBalanceTimeouts[key]);
+      delete this.pollBalanceTimeouts[key];
+    }
   }
 
   async fetchPublic() {
