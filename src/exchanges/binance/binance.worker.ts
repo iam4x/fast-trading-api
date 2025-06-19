@@ -14,6 +14,7 @@ import {
   type Account,
   type ExchangeConfig,
   type FetchOHLCVParams,
+  type Timeframe,
 } from "~/types/lib.types";
 import { DEFAULT_CONFIG } from "~/config";
 
@@ -175,19 +176,13 @@ export class BinanceWorker extends BaseWorker {
     this.emitResponse({ requestId, data: candles });
   }
 
-  // listenOHLCV({ symbol, timeframe }: { symbol: string; timeframe: Timeframe }) {
-  //   this.publicWs?.listenOHLCV({ symbol, timeframe });
-  // }
+  listenOHLCV(opts: { symbol: string; timeframe: Timeframe }) {
+    this.publicWs?.listenOHLCV(opts);
+  }
 
-  // unlistenOHLCV({
-  //   symbol,
-  //   timeframe,
-  // }: {
-  //   symbol: string;
-  //   timeframe: Timeframe;
-  // }) {
-  //   this.publicWs?.unlistenOHLCV({ symbol, timeframe });
-  // }
+  unlistenOHLCV(opts: { symbol: string; timeframe: Timeframe }) {
+    this.publicWs?.unlistenOHLCV(opts);
+  }
 }
 
 new BinanceWorker({
