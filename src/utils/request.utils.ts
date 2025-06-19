@@ -1,21 +1,23 @@
 import { retry } from "./retry.utils";
 import { stringify } from "./query-string.utils";
 
+export type RequestParams = Record<
+  string,
+  | boolean
+  | string
+  | number
+  | string[]
+  | number[]
+  | Array<Record<string, any>>
+  | Record<string, any>
+>;
+
 export type Request = {
   url: string;
   headers?: Record<string, string>;
   method?: "GET" | "POST";
-  params?: Record<string, string | number | string[] | number[]>;
-  body?: Record<
-    string,
-    | boolean
-    | string
-    | number
-    | string[]
-    | number[]
-    | Array<Record<string, any>>
-    | Record<string, any>
-  >;
+  params?: RequestParams;
+  body?: RequestParams;
   retries?: number;
 };
 
