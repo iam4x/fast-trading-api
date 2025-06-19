@@ -3,6 +3,7 @@ import type { BinanceWorker } from "./binance.worker";
 import { tryParse } from "~/utils/try-parse.utils";
 import { genIntId } from "~/utils/gen-id.utils";
 import { ReconnectingWebSocket } from "~/utils/reconnecting-websocket.utils";
+import type { Candle, Timeframe } from "~/types/lib.types";
 
 type JSONData = Record<string, any> | Array<Record<string, any>>;
 
@@ -14,6 +15,9 @@ export class BinanceWsPublic {
   interval: NodeJS.Timeout | null = null;
 
   messageHandlers: Record<string, (data: JSONData) => void> = {};
+
+  ohlcvTopics = new Set<string>();
+  ohlcvTimeouts = new Map<string, NodeJS.Timeout>();
 
   constructor({ parent }: { parent: BinanceWorker }) {
     this.parent = parent;
@@ -40,6 +44,14 @@ export class BinanceWsPublic {
       method: "SUBSCRIBE",
       params: ["!ticker@arr", "!bookTicker", "!markPrice@arr@1s"],
     });
+
+    if (this.ohlcvTopics.size > 0) {
+      this.send({
+        id: genIntId(),
+        method: "SUBSCRIBE",
+        params: Array.from(this.ohlcvTopics),
+      });
+    }
   };
 
   onMessage = (event: MessageEvent) => {
@@ -112,21 +124,82 @@ export class BinanceWsPublic {
     }
   };
 
-  // listenOHLCV = ({
-  //   symbol,
-  //   timeframe,
-  // }: {
-  //   symbol: string;
-  //   timeframe: Timeframe;
-  // }) => {};
+  listenOHLCV = ({
+    symbol,
+    timeframe,
+  }: {
+    symbol: string;
+    timeframe: Timeframe;
+  }) => {
+    const topic = `${symbol.toLowerCase()}@kline_${timeframe}`;
 
-  // unlistenOHLCV = ({
-  //   symbol,
-  //   timeframe,
-  // }: {
-  //   symbol: string;
-  //   timeframe: Timeframe;
-  // }) => {};
+    if (this.ohlcvTopics.has(topic)) return;
+    this.ohlcvTopics.add(topic);
+
+    this.messageHandlers[topic] = (data: JSONData) => {
+      if (
+        !Array.isArray(data) &&
+        data.e === "kline" &&
+        data.k.s === symbol &&
+        data.k.i === timeframe
+      ) {
+        const candle: Candle = {
+          symbol,
+          timeframe,
+          timestamp: data.k.t / 1000,
+          open: parseFloat(data.k.o),
+          high: parseFloat(data.k.h),
+          low: parseFloat(data.k.l),
+          close: parseFloat(data.k.c),
+          volume: parseFloat(data.k.v),
+        };
+
+        this.parent.emitCandle(candle);
+      }
+    };
+
+    const waitConnectAndSubscribe = () => {
+      if (this.ohlcvTimeouts.has(topic)) {
+        clearTimeout(this.ohlcvTimeouts.get(topic));
+        this.ohlcvTimeouts.delete(topic);
+      }
+
+      if (this.ws?.readyState !== WebSocket.OPEN) {
+        this.ohlcvTimeouts.set(
+          topic,
+          setTimeout(() => waitConnectAndSubscribe(), 100),
+        );
+        return;
+      }
+
+      this.send({ id: genIntId(), method: "SUBSCRIBE", params: [topic] });
+    };
+
+    waitConnectAndSubscribe();
+  };
+
+  unlistenOHLCV = ({
+    symbol,
+    timeframe,
+  }: {
+    symbol: string;
+    timeframe: Timeframe;
+  }) => {
+    const topic = `${symbol.toLowerCase()}@kline_${timeframe}`;
+    const timeout = this.ohlcvTimeouts.get(topic);
+
+    if (timeout) {
+      clearTimeout(timeout);
+      this.ohlcvTimeouts.delete(topic);
+    }
+
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.send({ id: genIntId(), method: "UNSUBSCRIBE", params: [topic] });
+    }
+
+    delete this.messageHandlers[topic];
+    this.ohlcvTopics.delete(topic);
+  };
 
   // listenOrderBook = (symbol: string) => {};
 
