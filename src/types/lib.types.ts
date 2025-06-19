@@ -63,6 +63,7 @@ export interface FetchOHLCVParams {
 export enum ExchangeName {
   BYBIT = "bybit",
   HL = "hyperliquid",
+  BINANCE = "binance",
 }
 
 export interface Account {
