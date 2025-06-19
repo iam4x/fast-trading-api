@@ -157,13 +157,13 @@ export class BinanceWorker extends BaseWorker {
     );
   };
 
-  // listenOrderBook(symbol: string) {
-  //   this.publicWs?.listenOrderBook(symbol);
-  // }
+  listenOrderBook(symbol: string) {
+    this.publicWs?.listenOrderBook(symbol);
+  }
 
-  // unlistenOrderBook(symbol: string) {
-  //   this.publicWs?.unlistenOrderBook(symbol);
-  // }
+  unlistenOrderBook(symbol: string) {
+    this.publicWs?.unlistenOrderBook(symbol);
+  }
 
   async fetchOHLCV({
     requestId,
