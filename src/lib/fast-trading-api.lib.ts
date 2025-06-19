@@ -2,6 +2,7 @@ import { MemoryStore } from "./store.lib";
 
 import { DEFAULT_CONFIG } from "~/config";
 import type { BaseExchange } from "~/exchanges/base.exchange";
+import { createBinanceExchange } from "~/exchanges/binance/binance.exchange";
 import { createBybitExchange } from "~/exchanges/bybit/bybit.exchange";
 import { createHyperliquidExchange } from "~/exchanges/hyperliquid/hl.exchange";
 import {
@@ -56,6 +57,10 @@ export class FastTradingApi {
       this.exchanges[ExchangeName.HL] = createHyperliquidExchange(this);
     }
 
+    if (exchangesList.has(ExchangeName.BINANCE)) {
+      this.exchanges[ExchangeName.BINANCE] = createBinanceExchange(this);
+    }
+
     await Promise.all(
       mapObj(this.exchanges, (_name, exchange) => exchange!.start()),
     );
@@ -106,6 +111,17 @@ export class FastTradingApi {
             await this.exchanges[ExchangeName.HL].start();
           } else {
             await this.exchanges[ExchangeName.HL].addAccounts(exchangeAccs);
+          }
+        }
+
+        if (exchangeName === ExchangeName.BINANCE) {
+          if (!this.exchanges[ExchangeName.BINANCE]) {
+            this.exchanges[ExchangeName.BINANCE] = createBinanceExchange(this);
+            await this.exchanges[ExchangeName.BINANCE].start();
+          } else {
+            await this.exchanges[ExchangeName.BINANCE].addAccounts(
+              exchangeAccs,
+            );
           }
         }
       },
