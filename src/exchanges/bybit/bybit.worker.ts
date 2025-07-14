@@ -62,8 +62,8 @@ export class BybitWorker extends BaseWorker {
     config: ExchangeConfig;
     requestId: string;
   }) {
-    await super.start({ accounts, requestId, config });
     await this.fetchPublic();
+    await super.start({ accounts, requestId, config });
     this.emitResponse({ requestId });
   }
 
