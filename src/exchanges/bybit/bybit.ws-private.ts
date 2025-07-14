@@ -148,20 +148,22 @@ export class BybitWsPrivate {
     if (toUpdate.length > 0) {
       this.parent.updateAccountPositions({
         accountId: this.account.id,
-        positions: toUpdate.map((p) => {
-          const position = mapBybitPosition({
-            position: p,
-            accountId: this.account.id,
-          });
+        positions: toUpdate
+          .filter((p) => p.symbol in this.parent.memory.public.markets)
+          .map((p) => {
+            const position = mapBybitPosition({
+              position: p,
+              accountId: this.account.id,
+            });
 
-          // we need to calculate ourself the notional value
-          // because bybit doesn't sends the up-to-date value based on ticker price
-          const notional =
-            position.contracts *
-            this.parent.memory.public.tickers[p.symbol].last;
+            // we need to calculate ourself the notional value
+            // because bybit doesn't sends the up-to-date value based on ticker price
+            const notional =
+              position.contracts *
+              this.parent.memory.public.tickers[p.symbol].last;
 
-          return { ...position, notional };
-        }),
+            return { ...position, notional };
+          }),
       });
     }
   };

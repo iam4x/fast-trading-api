@@ -138,9 +138,11 @@ export const fetchBybitBalance = async ({
 export const fetchBybitPositions = async ({
   account,
   config,
+  markets,
 }: {
   config: ExchangeConfig;
   account: Account;
+  markets: Record<string, Market>;
 }) => {
   const json = await bybit<{ result: { list: BybitPosition[] } }>({
     key: account.apiKey,
@@ -150,9 +152,9 @@ export const fetchBybitPositions = async ({
     retries: 3,
   });
 
-  const positions: Position[] = json.result.list.map((p) =>
-    mapBybitPosition({ position: p, accountId: account.id }),
-  );
+  const positions: Position[] = json.result.list
+    .filter((p) => p.symbol in markets)
+    .map((p) => mapBybitPosition({ position: p, accountId: account.id }));
 
   return positions;
 };

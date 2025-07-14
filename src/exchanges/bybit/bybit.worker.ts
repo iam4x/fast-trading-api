@@ -142,6 +142,7 @@ export class BybitWorker extends BaseWorker {
         const positions = await fetchBybitPositions({
           config: this.config,
           account,
+          markets: this.memory.public.markets,
         });
 
         this.emitChanges([
