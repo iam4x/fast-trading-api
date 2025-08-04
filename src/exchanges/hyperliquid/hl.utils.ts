@@ -51,10 +51,10 @@ export const mapHLUserAccount = ({
     };
   });
 
-  const used = parseFloat(crossMarginSummary.totalMarginUsed);
-  const total = parseFloat(crossMarginSummary.accountValue);
-  const free = subtract(total, used);
   const upnl = sumBy(positions, (p) => p.upnl);
+  const used = parseFloat(crossMarginSummary.totalMarginUsed);
+  const total = subtract(parseFloat(crossMarginSummary.accountValue), upnl);
+  const free = subtract(total, used);
 
   const balance: Balance = { used, free, total, upnl };
 
