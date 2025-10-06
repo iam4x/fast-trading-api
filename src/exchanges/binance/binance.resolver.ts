@@ -429,8 +429,6 @@ export const placeBinanceTradingStop = async ({
     body: stopOrder,
   });
 
-  console.log(data);
-
   return data;
 };
 

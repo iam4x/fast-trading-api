@@ -69,8 +69,6 @@ export class BinanceWsPrivate {
 
     if (json?.e === "ACCOUNT_UPDATE") return this.handleAccountEvents(json);
     if (json?.e === "ORDER_TRADE_UPDATE") return this.handleOrderEvents(json);
-
-    console.log(json);
   };
 
   onClose = () => {
