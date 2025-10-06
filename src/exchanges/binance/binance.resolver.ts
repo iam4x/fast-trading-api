@@ -26,6 +26,7 @@ import {
   type Candle,
   type Order,
   OrderStatus,
+  type Fill,
 } from "~/types/lib.types";
 import { request } from "~/utils/request.utils";
 import { getKV } from "~/utils/get-kv.utils";
@@ -305,6 +306,30 @@ export const fetchBinanceOrders = async ({
   }));
 
   return orders;
+};
+
+export const fetchBinanceOrdersHistory = async ({
+  config,
+  account,
+}: {
+  config: ExchangeConfig;
+  account: Account;
+}) => {
+  const data = await binance<Record<string, any>[]>({
+    url: `${config.PRIVATE_API_URL}${BINANCE_ENDPOINTS.PRIVATE.ORDERS_HISTORY}`,
+    key: account.apiKey,
+    secret: account.apiSecret,
+  });
+
+  const fills: Fill[] = data.map((o) => ({
+    symbol: o.symbol,
+    side: ORDER_SIDE[o.side],
+    price: parseFloat(o.price),
+    amount: parseFloat(o.origQty),
+    timestamp: o.time,
+  }));
+
+  return fills;
 };
 
 const getTimeUnitInMs = (unit: string): number => {

@@ -28,6 +28,7 @@ export const BINANCE_ENDPOINTS = {
     CANCEL_SYMBOL_ORDERS: "/fapi/v1/allOpenOrders",
     ORDER: "/fapi/v1/order",
     BATCH_ORDERS: "/fapi/v1/batchOrders",
+    ORDERS_HISTORY: "/fapi/v1/allOrders",
   },
 };
 

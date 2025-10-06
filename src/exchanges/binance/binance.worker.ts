@@ -5,6 +5,7 @@ import {
   fetchBinanceMarkets,
   fetchBinanceOHLCV,
   fetchBinanceOrders,
+  fetchBinanceOrdersHistory,
   fetchBinanceTickers,
 } from "./binance.resolver";
 import { BinanceWsPublic } from "./binance.ws-public";
@@ -119,6 +120,27 @@ export class BinanceWorker extends BaseWorker {
           value: orders,
         },
       ]);
+
+      const ordersHistory = await fetchBinanceOrdersHistory({
+        config: this.config,
+        account,
+      });
+
+      this.log(
+        `Loaded ${ordersHistory.length} Binance orders history for account [${account.id}]`,
+      );
+
+      this.emitChanges([
+        {
+          type: "update",
+          path: `private.${account.id}.fills`,
+          value: ordersHistory,
+        },
+      ]);
+    }
+
+    if (requestId) {
+      this.emitResponse({ requestId });
     }
   }
 
