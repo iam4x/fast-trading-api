@@ -174,6 +174,7 @@ export const fetchBinanceAccount = async ({
       rpnl: 0,
       contracts: Math.abs(contracts),
       liquidationPrice: 0,
+      isHedged: pSide !== "BOTH",
     };
   });
 
@@ -229,6 +230,38 @@ export const fetchBinanceOHLCV = async ({
   );
 
   return candles;
+};
+
+export const fetchBinanceListenkey = async ({
+  config,
+  account,
+}: {
+  config: ExchangeConfig;
+  account: Account;
+}) => {
+  const data = await binance<{ listenKey: string }>({
+    url: `${config.PRIVATE_API_URL}${BINANCE_ENDPOINTS.PRIVATE.LISTEN_KEY}`,
+    method: "POST",
+    key: account.apiKey,
+    secret: account.apiSecret,
+  });
+
+  return data.listenKey;
+};
+
+export const refreshBinanceListenkey = async ({
+  config,
+  account,
+}: {
+  config: ExchangeConfig;
+  account: Account;
+}) => {
+  await binance<{ listenKey: string }>({
+    url: `${config.PRIVATE_API_URL}${BINANCE_ENDPOINTS.PRIVATE.LISTEN_KEY}`,
+    method: "PUT",
+    key: account.apiKey,
+    secret: account.apiSecret,
+  });
 };
 
 const getTimeUnitInMs = (unit: string): number => {

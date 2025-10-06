@@ -15,7 +15,7 @@ export type RequestParams = Record<
 export type Request = {
   url: string;
   headers?: Record<string, string>;
-  method?: "GET" | "POST";
+  method?: "GET" | "POST" | "PUT" | "DELETE";
   params?: RequestParams;
   body?: RequestParams;
   retries?: number;

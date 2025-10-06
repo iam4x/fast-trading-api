@@ -7,6 +7,7 @@ import {
   fetchBinanceTickers,
 } from "./binance.resolver";
 import { BinanceWsPublic } from "./binance.ws-public";
+import { BinanceWsPrivate } from "./binance.ws-private";
 
 import { omit } from "~/utils/omit.utils";
 import {
@@ -22,6 +23,7 @@ export class BinanceWorker extends BaseWorker {
   publicWs: BinanceWsPublic | null = null;
 
   pollBalancePositionsTimeouts: Record<Account["id"], NodeJS.Timeout> = {};
+  privateWs: Record<Account["id"], BinanceWsPrivate> = {};
 
   async start({
     accounts,
@@ -82,12 +84,12 @@ export class BinanceWorker extends BaseWorker {
   }) {
     super.addAccounts({ accounts, requestId });
 
-    // for (const account of accounts) {
-    //   this.privateWs[account.id] = new BinanceWsPrivate({
-    //     parent: this,
-    //     account,
-    //   });
-    // }
+    for (const account of accounts) {
+      this.privateWs[account.id] = new BinanceWsPrivate({
+        parent: this,
+        account,
+      });
+    }
 
     await Promise.all(
       accounts.map(async (account) => {
