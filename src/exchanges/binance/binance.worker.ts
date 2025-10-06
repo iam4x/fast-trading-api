@@ -1,6 +1,8 @@
 import { BaseWorker } from "../base.worker";
 
 import {
+  cancelBinanceOrders,
+  cancelBinanceSymbolOrders,
   fetchBinanceAccount,
   fetchBinanceMarkets,
   fetchBinanceOHLCV,
@@ -20,6 +22,10 @@ import {
   type Timeframe,
 } from "~/types/lib.types";
 import { DEFAULT_CONFIG } from "~/config";
+import { groupBy } from "~/utils/group-by.utils";
+import { mapObj } from "~/utils/map-obj.utils";
+import { chunk } from "~/utils/chunk.utils";
+import { uniq } from "~/utils/uniq.utils";
 
 export class BinanceWorker extends BaseWorker {
   publicWs: BinanceWsPublic | null = null;
@@ -227,6 +233,101 @@ export class BinanceWorker extends BaseWorker {
 
   unlistenOHLCV(opts: { symbol: string; timeframe: Timeframe }) {
     this.publicWs?.unlistenOHLCV(opts);
+  }
+
+  async cancelOrders({
+    orderIds,
+    accountId,
+    requestId,
+  }: {
+    orderIds: string[];
+    accountId: string;
+    requestId: string;
+    priority?: boolean;
+  }) {
+    const account = this.accounts.find((a) => a.id === accountId);
+
+    if (!account) {
+      this.error(`No account found for id: ${accountId}`);
+      return;
+    }
+
+    const orders = this.mapAccountOrdersFromIds({ orderIds, accountId });
+
+    if (orders.length > 0) {
+      const groupedBySymbol = groupBy(orders, (o) => o.symbol);
+      const requests = mapObj(groupedBySymbol, (symbol, orders) => {
+        return {
+          symbol,
+          origClientOrderIdList: orders.map((o) => o.id),
+        };
+      });
+
+      for (const request of requests) {
+        const lots = chunk(request.origClientOrderIdList, 10);
+
+        for (const lot of lots) {
+          await cancelBinanceOrders({
+            config: this.config,
+            account,
+            symbol: request.symbol,
+            origClientOrderIdList: lot,
+          });
+        }
+      }
+    }
+
+    this.emitResponse({ requestId, data: [] });
+  }
+
+  async cancelAllOrders({
+    accountId,
+    requestId,
+  }: {
+    accountId: string;
+    requestId: string;
+  }) {
+    const account = this.accounts.find((a) => a.id === accountId);
+
+    if (!account) {
+      this.error(`No account found for id: ${accountId}`);
+      return;
+    }
+
+    const symbols = uniq(
+      this.memory.private[accountId].orders.map((o) => o.symbol),
+    );
+
+    for (const symbol of symbols) {
+      await cancelBinanceSymbolOrders({
+        config: this.config,
+        account,
+        symbol,
+      });
+    }
+
+    this.emitResponse({ requestId, data: [] });
+  }
+
+  async cancelSymbolOrders({
+    symbol,
+    accountId,
+    requestId,
+  }: {
+    symbol: string;
+    accountId: string;
+    requestId: string;
+  }) {
+    const account = this.accounts.find((a) => a.id === accountId);
+
+    if (!account) {
+      this.error(`No account found for id: ${accountId}`);
+      return;
+    }
+
+    await cancelBinanceSymbolOrders({ config: this.config, account, symbol });
+
+    this.emitResponse({ requestId, data: [] });
   }
 }
 

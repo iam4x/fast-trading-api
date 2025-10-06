@@ -332,6 +332,49 @@ export const fetchBinanceOrdersHistory = async ({
   return fills;
 };
 
+export const cancelBinanceOrders = async ({
+  config,
+  account,
+  symbol,
+  origClientOrderIdList,
+}: {
+  config: ExchangeConfig;
+  account: Account;
+  symbol: string;
+  origClientOrderIdList: (string | number)[];
+}) => {
+  await binance({
+    url: `${config.PRIVATE_API_URL}${BINANCE_ENDPOINTS.PRIVATE.BATCH_ORDERS}`,
+    method: "DELETE",
+    key: account.apiKey,
+    secret: account.apiSecret,
+    params: {
+      symbol,
+      origClientOrderIdList: JSON.stringify(origClientOrderIdList),
+    },
+  });
+};
+
+export const cancelBinanceSymbolOrders = async ({
+  config,
+  account,
+  symbol,
+}: {
+  config: ExchangeConfig;
+  account: Account;
+  symbol: string;
+}) => {
+  await binance({
+    url: `${config.PRIVATE_API_URL}${BINANCE_ENDPOINTS.PRIVATE.CANCEL_SYMBOL_ORDERS}`,
+    method: "DELETE",
+    key: account.apiKey,
+    secret: account.apiSecret,
+    params: {
+      symbol,
+    },
+  });
+};
+
 const getTimeUnitInMs = (unit: string): number => {
   switch (unit.toLowerCase()) {
     case "m":
