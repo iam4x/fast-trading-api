@@ -10,16 +10,26 @@ import {
   fetchBinanceOrdersHistory,
   fetchBinanceSymbolPositions,
   fetchBinanceTickers,
+  placeBinanceOrderBatch,
+  placeBinanceTradingStop,
 } from "./binance.resolver";
 import { BinanceWsPublic } from "./binance.ws-public";
 import { BinanceWsPrivate } from "./binance.ws-private";
+import { ORDER_SIDE, ORDER_TYPE, TIME_IN_FORCE } from "./binance.config";
 
 import { omit } from "~/utils/omit.utils";
 import {
   ExchangeName,
+  OrderSide,
+  OrderTimeInForce,
+  OrderType,
+  PositionSide,
   type Account,
   type ExchangeConfig,
   type FetchOHLCVParams,
+  type PlaceOrderOpts,
+  type PlacePositionStopOpts,
+  type Position,
   type Timeframe,
 } from "~/types/lib.types";
 import { DEFAULT_CONFIG } from "~/config";
@@ -27,6 +37,11 @@ import { groupBy } from "~/utils/group-by.utils";
 import { mapObj } from "~/utils/map-obj.utils";
 import { chunk } from "~/utils/chunk.utils";
 import { uniq } from "~/utils/uniq.utils";
+import { adjust } from "~/utils/safe-math.utils";
+import { inverseObj } from "~/utils/inverse-obj.utils";
+import { genId } from "~/utils/gen-id.utils";
+import { omitUndefined } from "~/utils/omit-undefined.utils";
+import { times } from "~/utils/times.utils";
 
 export class BinanceWorker extends BaseWorker {
   publicWs: BinanceWsPublic | null = null;
@@ -357,6 +372,228 @@ export class BinanceWorker extends BaseWorker {
 
     this.emitResponse({ requestId, data: { leverage, isHedged } });
   }
+
+  async placeOrders({
+    orders,
+    accountId,
+    requestId,
+  }: {
+    orders: PlaceOrderOpts[];
+    accountId: string;
+    requestId: string;
+    priority?: boolean;
+  }) {
+    const account = this.accounts.find((a) => a.id === accountId);
+
+    if (!account) {
+      this.error(`No account found for id: ${accountId}`);
+      return [];
+    }
+
+    const payloads = orders.flatMap((o) =>
+      this.formatCreateOrder({ opts: o, accountId }),
+    );
+
+    const { orderIds, errors } = await placeBinanceOrderBatch({
+      config: this.config,
+      account,
+      payloads,
+    });
+
+    for (const error of errors) {
+      this.error(`Binance place order error: ${error}`);
+    }
+
+    this.emitResponse({ requestId, data: orderIds });
+
+    return orderIds;
+  }
+
+  async placePositionStop({
+    position,
+    stop,
+    requestId,
+  }: {
+    position: Position;
+    stop: PlacePositionStopOpts;
+    requestId: string;
+    priority?: boolean;
+  }) {
+    const account = this.accounts.find((a) => a.id === position.accountId);
+
+    if (!account) {
+      this.error(`No account found for id: ${position.accountId}`);
+      return;
+    }
+
+    const stopOrder: Record<string, any> = {
+      newClientOrderId: genId(),
+      symbol: position.symbol,
+      side: inverseObj(ORDER_SIDE)[
+        position.side === PositionSide.Long ? OrderSide.Sell : OrderSide.Buy
+      ],
+      positionSide: this.getOrderPositionSide({
+        accountId: account.id,
+        opts: {
+          symbol: position.symbol,
+          side:
+            position.side === PositionSide.Long
+              ? OrderSide.Sell
+              : OrderSide.Buy,
+          type: stop.type,
+          reduceOnly: true,
+        },
+      }),
+      type: inverseObj(ORDER_TYPE)[stop.type],
+      closePosition: "true",
+      stopPrice: stop.price,
+    };
+
+    if (stop.type === OrderType.TrailingStopLoss) {
+      const market = this.memory.public.markets[position.symbol];
+      const ticker = this.memory.public.tickers[position.symbol];
+
+      if (!market) {
+        this.error(`No market found for symbol: ${position.symbol}`);
+        this.emitResponse({ requestId, data: [] });
+        return;
+      }
+
+      if (!ticker) {
+        this.error(`No ticker found for symbol: ${position.symbol}`);
+        this.emitResponse({ requestId, data: [] });
+        return;
+      }
+
+      const priceDistance = adjust(
+        Math.max(ticker.last, stop.price) - Math.min(ticker.last, stop.price),
+        market.precision.price,
+      );
+
+      const distancePercentage =
+        Math.round(((priceDistance * 100) / ticker.last) * 10) / 10;
+
+      delete stopOrder.closePosition;
+      stopOrder.priceProtect = "true";
+      stopOrder.quantity = `${position.contracts}`;
+      stopOrder.callbackRate = `${distancePercentage}`;
+    }
+
+    await placeBinanceTradingStop({
+      config: this.config,
+      account,
+      stopOrder,
+    });
+
+    this.emitResponse({ requestId, data: [] });
+  }
+
+  formatCreateOrder = ({
+    opts,
+    accountId,
+  }: {
+    opts: PlaceOrderOpts;
+    accountId: string;
+  }) => {
+    const market = this.memory.public.markets[opts.symbol];
+
+    if (!market) {
+      this.error(`No market found for symbol: ${opts.symbol}`);
+      return [];
+    }
+
+    const isStopOrTP =
+      opts.type === OrderType.StopLoss || opts.type === OrderType.TakeProfit;
+
+    const pSide = this.getOrderPositionSide({ opts, accountId });
+
+    const maxSize = market.limits.amount.max;
+    const pPrice = market.precision.price;
+
+    const pAmount = market.precision.amount;
+    const amount = adjust(opts.amount, pAmount);
+
+    // We use price only for limit orders
+    // Market order should not define price
+    const price =
+      opts.price && opts.type !== OrderType.Market
+        ? adjust(opts.price, pPrice)
+        : undefined;
+
+    // Binance stopPrice only for SL or TP orders
+    const priceField = isStopOrTP ? "stopPrice" : "price";
+
+    const timeInForce = opts.timeInForce
+      ? inverseObj(TIME_IN_FORCE)[opts.timeInForce]
+      : inverseObj(TIME_IN_FORCE)[OrderTimeInForce.GoodTillCancel];
+
+    const req = omitUndefined({
+      symbol: opts.symbol,
+      positionSide: pSide,
+      side: inverseObj(ORDER_SIDE)[opts.side],
+      type: inverseObj(ORDER_TYPE)[opts.type],
+      quantity: amount ? `${amount}` : undefined,
+      [priceField]: price ? `${price}` : undefined,
+      timeInForce: opts.type === OrderType.Limit ? timeInForce : undefined,
+      closePosition: isStopOrTP ? "true" : undefined,
+      reduceOnly: opts.reduceOnly && !isStopOrTP ? "true" : undefined,
+    });
+
+    const lots = amount > maxSize ? Math.ceil(amount / maxSize) : 1;
+    const rest = amount > maxSize ? adjust(amount % maxSize, pAmount) : 0;
+
+    const lotSize = adjust((amount - rest) / lots, pAmount);
+
+    const payloads: Array<Record<string, any>> = times(lots, () => ({
+      ...req,
+      quantity: `${lotSize}`,
+    }));
+
+    if (rest) {
+      payloads.push({ ...req, quantity: `${rest}` });
+    }
+
+    // We need to set orderId for each order
+    // otherwise Binance will duplicate the IDs
+    // when its sent in batches
+    for (const payload of payloads) {
+      payload.newClientOrderId = genId();
+    }
+
+    return payloads;
+  };
+
+  getOrderPositionSide = ({
+    opts,
+    accountId,
+  }: {
+    opts: {
+      symbol: string;
+      side: OrderSide;
+      type: OrderType;
+      reduceOnly: boolean;
+    };
+    accountId: string;
+  }) => {
+    let positionSide = "BOTH";
+
+    // We need to specify side of the position to interract with
+    // if we are in hedged mode on the binance account
+    if (this.memory.private[accountId].metadata.hedgedPosition[opts.symbol]) {
+      positionSide = opts.side === OrderSide.Buy ? "LONG" : "SHORT";
+
+      if (
+        opts.type === OrderType.StopLoss ||
+        opts.type === OrderType.TakeProfit ||
+        opts.type === OrderType.TrailingStopLoss ||
+        opts.reduceOnly
+      ) {
+        positionSide = positionSide === "LONG" ? "SHORT" : "LONG";
+      }
+    }
+
+    return positionSide;
+  };
 }
 
 new BinanceWorker({

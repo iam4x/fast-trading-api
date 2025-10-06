@@ -27,6 +27,7 @@ import { request } from "~/utils/request.utils";
 import { getKV } from "~/utils/get-kv.utils";
 import { TICKER_REGEX } from "~/utils/regex.utils";
 import { subtract } from "~/utils/safe-math.utils";
+import { chunk } from "~/utils/chunk.utils";
 
 export const fetchBinanceMarkets = async (config: ExchangeConfig) => {
   const { symbols } = await request<{ symbols: BinanceMarket[] }>({
@@ -369,6 +370,68 @@ export const fetchBinanceSymbolPositions = async ({
   );
 
   return positions;
+};
+
+export const placeBinanceOrderBatch = async ({
+  config,
+  account,
+  payloads,
+}: {
+  config: ExchangeConfig;
+  account: Account;
+  payloads: Record<string, any>[];
+}) => {
+  const lots = chunk(payloads, 5);
+
+  const orderIds = [] as string[];
+  const errors = [] as string[];
+
+  for (const lot of lots) {
+    const data = await binance<Record<string, any>[]>({
+      url: `${config.PRIVATE_API_URL}${BINANCE_ENDPOINTS.PRIVATE.BATCH_ORDERS}`,
+      method: "POST",
+      key: account.apiKey,
+      secret: account.apiSecret,
+      body: {
+        batchOrders: JSON.stringify(lot),
+      },
+    });
+
+    data.forEach((o) => {
+      if (o.code) {
+        errors.push(o.msg);
+      } else {
+        orderIds.push(o.clientOrderId);
+      }
+    });
+  }
+
+  return {
+    orderIds,
+    errors,
+  };
+};
+
+export const placeBinanceTradingStop = async ({
+  config,
+  account,
+  stopOrder,
+}: {
+  config: ExchangeConfig;
+  account: Account;
+  stopOrder: Record<string, any>;
+}) => {
+  const data = await binance({
+    url: `${config.PRIVATE_API_URL}${BINANCE_ENDPOINTS.PRIVATE.ORDER}`,
+    method: "POST",
+    key: account.apiKey,
+    secret: account.apiSecret,
+    body: stopOrder,
+  });
+
+  console.log(data);
+
+  return data;
 };
 
 const getTimeUnitInMs = (unit: string): number => {
