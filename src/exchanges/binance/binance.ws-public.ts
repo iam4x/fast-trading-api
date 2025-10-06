@@ -12,6 +12,8 @@ type JSONData = Record<string, any> | Array<Record<string, any>>;
 
 export class BinanceWsPublic {
   parent: BinanceWorker;
+
+  pingAt = 0;
   isStopped = false;
 
   ws: ReconnectingWebSocket | null = null;
@@ -64,6 +66,17 @@ export class BinanceWsPublic {
     const data = tryParse<JSONData>(event.data);
 
     if (data) {
+      if ((data as any).id === 42) {
+        const latency = (performance.now() - this.pingAt) / 2;
+        this.parent.emitChanges([
+          { type: "update", path: "public.latency", value: latency },
+        ]);
+
+        this.interval = setTimeout(() => {
+          this.ping();
+        }, 10_000);
+      }
+
       for (const key in this.messageHandlers) {
         this.messageHandlers[key](data);
       }
@@ -71,9 +84,8 @@ export class BinanceWsPublic {
   };
 
   ping = () => {
-    this.interval = setInterval(() => {
-      this.send({ id: genIntId(), method: "LIST_SUBSCRIPTIONS" });
-    }, 10_000);
+    this.pingAt = performance.now();
+    this.send({ id: 42, method: "LIST_SUBSCRIPTIONS" });
   };
 
   handleTickerStream = (data: JSONData) => {
