@@ -1,4 +1,9 @@
-import { BINANCE_ENDPOINTS, POSITION_SIDE } from "./binance.config";
+import {
+  BINANCE_ENDPOINTS,
+  ORDER_SIDE,
+  ORDER_TYPE,
+  POSITION_SIDE,
+} from "./binance.config";
 import type {
   BinanceAccount,
   BinanceMarket,
@@ -19,10 +24,13 @@ import {
   type Ticker,
   type FetchOHLCVParams,
   type Candle,
+  type Order,
+  OrderStatus,
 } from "~/types/lib.types";
 import { request } from "~/utils/request.utils";
 import { getKV } from "~/utils/get-kv.utils";
 import { TICKER_REGEX } from "~/utils/regex.utils";
+import { subtract } from "~/utils/safe-math.utils";
 
 export const fetchBinanceMarkets = async (config: ExchangeConfig) => {
   const { symbols } = await request<{ symbols: BinanceMarket[] }>({
@@ -262,6 +270,41 @@ export const refreshBinanceListenkey = async ({
     key: account.apiKey,
     secret: account.apiSecret,
   });
+};
+
+export const fetchBinanceOrders = async ({
+  config,
+  account,
+}: {
+  config: ExchangeConfig;
+  account: Account;
+}) => {
+  const data = await binance<Record<string, any>[]>({
+    url: `${config.PRIVATE_API_URL}${BINANCE_ENDPOINTS.PRIVATE.OPEN_ORDERS}`,
+    key: account.apiKey,
+    secret: account.apiSecret,
+  });
+
+  const orders: Order[] = data.map((o) => ({
+    id: getKV(o, "clientOrderId"),
+    exchange: ExchangeName.BINANCE,
+    accountId: account.id,
+    status: OrderStatus.Open,
+    symbol: o.symbol,
+    type: ORDER_TYPE[o.type],
+    side: ORDER_SIDE[o.side],
+    price: parseFloat(o.price) || parseFloat(getKV(o, "stopPrice")),
+    amount: parseFloat(getKV(o, "origQty")),
+    reduceOnly: getKV(o, "reduceOnly") || false,
+    filled: parseFloat(getKV(o, "executedQty")),
+    remaining: subtract(
+      parseFloat(getKV(o, "origQty")),
+      parseFloat(getKV(o, "executedQty")),
+    ),
+    timestamp: parseInt(o.time, 10),
+  }));
+
+  return orders;
 };
 
 const getTimeUnitInMs = (unit: string): number => {

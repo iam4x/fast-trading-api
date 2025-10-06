@@ -4,6 +4,7 @@ import {
   fetchBinanceAccount,
   fetchBinanceMarkets,
   fetchBinanceOHLCV,
+  fetchBinanceOrders,
   fetchBinanceTickers,
 } from "./binance.resolver";
 import { BinanceWsPublic } from "./binance.ws-public";
@@ -84,13 +85,6 @@ export class BinanceWorker extends BaseWorker {
   }) {
     super.addAccounts({ accounts, requestId });
 
-    for (const account of accounts) {
-      this.privateWs[account.id] = new BinanceWsPrivate({
-        parent: this,
-        account,
-      });
-    }
-
     await Promise.all(
       accounts.map(async (account) => {
         await this.fetchAndPollBalancePositions(account);
@@ -99,6 +93,33 @@ export class BinanceWorker extends BaseWorker {
         );
       }),
     );
+
+    for (const account of accounts) {
+      // Start listening on private data updates
+      // as we have fetched the initial data from HTTP API
+      this.privateWs[account.id] = new BinanceWsPrivate({
+        parent: this,
+        account,
+      });
+
+      // Then we fetch orders per account
+      const orders = await fetchBinanceOrders({
+        config: this.config,
+        account,
+      });
+
+      this.log(
+        `Loaded ${orders.length} Binance active orders for account [${account.id}]`,
+      );
+
+      this.emitChanges([
+        {
+          type: "update",
+          path: `private.${account.id}.orders`,
+          value: orders,
+        },
+      ]);
+    }
   }
 
   async removeAccount({
