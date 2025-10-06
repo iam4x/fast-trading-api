@@ -4,6 +4,7 @@ import {
   cancelBinanceOrders,
   cancelBinanceSymbolOrders,
   fetchBinanceAccount,
+  fetchBinanceLeverageBracket,
   fetchBinanceMarkets,
   fetchBinanceOHLCV,
   fetchBinanceOrders,
@@ -144,6 +145,21 @@ export class BinanceWorker extends BaseWorker {
         },
       ]);
 
+      // Then we fetch leverage bracket
+      const leverageBrackets = await fetchBinanceLeverageBracket({
+        config: this.config,
+        account,
+      });
+
+      this.emitChanges([
+        {
+          type: "update",
+          path: `private.${account.id}.metadata.maxLeveragePerSymbol`,
+          value: leverageBrackets,
+        },
+      ]);
+
+      // Then we fetch orders history
       const ordersHistory = await fetchBinanceOrdersHistory({
         config: this.config,
         account,
@@ -256,10 +272,12 @@ export class BinanceWorker extends BaseWorker {
       return;
     }
 
-    const market = this.memory.public.markets[symbol];
+    const maxLeverage =
+      this.memory.private[accountId].metadata.maxLeveragePerSymbol[symbol];
+
     const leverageWithinBounds = Math.min(
-      Math.max(leverage, market.limits.leverage.min),
-      market.limits.leverage.max,
+      Math.max(leverage, maxLeverage),
+      maxLeverage,
     );
 
     const success = await setBinanceLeverage({

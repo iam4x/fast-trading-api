@@ -74,11 +74,10 @@ export const fetchBinanceMarkets = async (config: ExchangeConfig) => {
             ),
             maxMarket: parseFloat(getKV(mAmt, "maxQty")),
           },
+          // those are not used for binance,
+          // we will use the metadata per account for leverage brackets
           leverage: {
             min: 1,
-            // TODO: Get max leverage per account?
-            // leverage brackets are computed per account for binance
-            // we need to figure it out how to do this thing
             max: 100,
           },
         },
@@ -90,6 +89,29 @@ export const fetchBinanceMarkets = async (config: ExchangeConfig) => {
   );
 
   return markets;
+};
+
+export const fetchBinanceLeverageBracket = async ({
+  config,
+  account,
+}: {
+  config: ExchangeConfig;
+  account: Account;
+}) => {
+  const data = await binance<
+    {
+      symbol: string;
+      brackets: { initialLeverage: number }[];
+    }[]
+  >({
+    url: `${config.PRIVATE_API_URL}${BINANCE_ENDPOINTS.PRIVATE.LEVERAGE_BRACKET}`,
+    key: account.apiKey,
+    secret: account.apiSecret,
+  });
+
+  return Object.fromEntries(
+    data.map((d) => [d.symbol, d.brackets[0].initialLeverage]),
+  );
 };
 
 export const fetchBinanceTickers = async (config: ExchangeConfig) => {

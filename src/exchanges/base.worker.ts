@@ -128,6 +128,7 @@ export class BaseWorker {
           chases: [],
           metadata: {
             leverage: {},
+            maxLeveragePerSymbol: {},
             hedgedPosition: {},
           },
         },

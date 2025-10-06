@@ -147,6 +147,7 @@ describe("MemoryStore", () => {
             chases: [],
             metadata: {
               leverage: {},
+              maxLeveragePerSymbol: {},
               hedgedPosition: {},
             },
           },
@@ -202,6 +203,7 @@ describe("MemoryStore", () => {
             metadata: {
               leverage: {},
               hedgedPosition: {},
+              maxLeveragePerSymbol: {},
             },
           },
         },
@@ -284,6 +286,7 @@ describe("MemoryStore", () => {
             metadata: {
               leverage: {},
               hedgedPosition: {},
+              maxLeveragePerSymbol: {},
             },
           },
         },
@@ -352,6 +355,7 @@ describe("MemoryStore", () => {
             metadata: {
               leverage: {},
               hedgedPosition: {},
+              maxLeveragePerSymbol: {},
             },
           },
         },
@@ -439,6 +443,7 @@ describe("MemoryStore", () => {
             metadata: {
               leverage: {},
               hedgedPosition: {},
+              maxLeveragePerSymbol: {},
             },
           },
         },
@@ -516,6 +521,7 @@ describe("MemoryStore", () => {
             metadata: {
               leverage: {},
               hedgedPosition: {},
+              maxLeveragePerSymbol: {},
             },
           },
         },

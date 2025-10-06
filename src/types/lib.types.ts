@@ -48,6 +48,7 @@ export interface ExchangeAccountMemory {
   chases: ChaseState[];
   metadata: {
     leverage: Record<string, number>;
+    maxLeveragePerSymbol: Record<string, number>;
     hedgedPosition: Record<string, boolean>;
   };
 }
