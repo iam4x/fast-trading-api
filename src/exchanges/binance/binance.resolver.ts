@@ -479,6 +479,21 @@ export const setBinanceLeverage = async ({
   return data.leverage === leverage;
 };
 
+export const fetchBinanceOpenInterest = async ({
+  config,
+  symbol,
+}: {
+  config: ExchangeConfig;
+  symbol: string;
+}) => {
+  const data = await request<{ openInterest: string }>({
+    url: `${config.PUBLIC_API_URL}${BINANCE_ENDPOINTS.PUBLIC.OPEN_INTEREST}`,
+    params: { symbol },
+  });
+
+  return parseFloat(data.openInterest);
+};
+
 const getTimeUnitInMs = (unit: string): number => {
   switch (unit.toLowerCase()) {
     case "m":

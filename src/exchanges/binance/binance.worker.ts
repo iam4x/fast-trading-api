@@ -7,6 +7,7 @@ import {
   fetchBinanceLeverageBracket,
   fetchBinanceMarkets,
   fetchBinanceOHLCV,
+  fetchBinanceOpenInterest,
   fetchBinanceOrders,
   fetchBinanceOrdersHistory,
   fetchBinanceSymbolPositions,
@@ -434,6 +435,22 @@ export class BinanceWorker extends BaseWorker {
     ]);
 
     this.emitResponse({ requestId, data: { leverage, isHedged } });
+
+    // HACK: For binance we will fetch OpenInterest here
+    // As it's not given from the websocket tickers
+
+    const openInterest = await fetchBinanceOpenInterest({
+      config: this.config,
+      symbol,
+    });
+
+    this.emitChanges([
+      {
+        type: `update`,
+        path: `public.tickers.${symbol}.openInterest`,
+        value: openInterest,
+      },
+    ]);
   }
 
   async placeOrders({

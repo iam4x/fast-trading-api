@@ -15,6 +15,7 @@ export const BINANCE_ENDPOINTS = {
     TICKERS_24H: "/fapi/v1/ticker/24hr",
     TICKERS_BOOK: "/fapi/v1/ticker/bookTicker",
     TICKERS_PRICE: "/fapi/v1/premiumIndex",
+    OPEN_INTEREST: "/fapi/v1/openInterest",
   },
   PRIVATE: {
     LISTEN_KEY: "/fapi/v1/listenKey",
