@@ -2,7 +2,7 @@
   "name": "fast-trading-api",
   "type": "module",
   "license": "MIT",
-  "version": "1.7.0",
+  "version": "1.7.1",
   "exports": {
     ".": "./dist/index.js",
     "./utils": "./dist/utils.js",
