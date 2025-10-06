@@ -12,6 +12,7 @@ import {
   fetchBinanceTickers,
   placeBinanceOrderBatch,
   placeBinanceTradingStop,
+  setBinanceLeverage,
 } from "./binance.resolver";
 import { BinanceWsPublic } from "./binance.ws-public";
 import { BinanceWsPrivate } from "./binance.ws-private";
@@ -235,6 +236,50 @@ export class BinanceWorker extends BaseWorker {
 
   unlistenOHLCV(opts: { symbol: string; timeframe: Timeframe }) {
     this.publicWs?.unlistenOHLCV(opts);
+  }
+
+  async setLeverage({
+    requestId,
+    accountId,
+    symbol,
+    leverage,
+  }: {
+    requestId: string;
+    accountId: string;
+    symbol: string;
+    leverage: number;
+  }) {
+    const account = this.accounts.find((a) => a.id === accountId);
+
+    if (!account) {
+      this.error(`No account found for id: ${accountId}`);
+      return;
+    }
+
+    const market = this.memory.public.markets[symbol];
+    const leverageWithinBounds = Math.min(
+      Math.max(leverage, market.limits.leverage.min),
+      market.limits.leverage.max,
+    );
+
+    const success = await setBinanceLeverage({
+      config: this.config,
+      account,
+      symbol,
+      leverage: leverageWithinBounds,
+    });
+
+    if (success) {
+      this.emitChanges([
+        {
+          type: `update`,
+          path: `private.${accountId}.metadata.leverage.${symbol}`,
+          value: leverage,
+        },
+      ]);
+    }
+
+    this.emitResponse({ requestId, data: success });
   }
 
   async cancelOrders({

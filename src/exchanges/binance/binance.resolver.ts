@@ -432,6 +432,31 @@ export const placeBinanceTradingStop = async ({
   return data;
 };
 
+export const setBinanceLeverage = async ({
+  account,
+  config,
+  symbol,
+  leverage,
+}: {
+  account: Account;
+  config: ExchangeConfig;
+  symbol: string;
+  leverage: number;
+}) => {
+  const data = await binance<{ leverage: number }>({
+    url: `${config.PRIVATE_API_URL}${BINANCE_ENDPOINTS.PRIVATE.SET_LEVERAGE}`,
+    method: "POST",
+    key: account.apiKey,
+    secret: account.apiSecret,
+    body: {
+      symbol,
+      leverage,
+    },
+  });
+
+  return data.leverage === leverage;
+};
+
 const getTimeUnitInMs = (unit: string): number => {
   switch (unit.toLowerCase()) {
     case "m":
