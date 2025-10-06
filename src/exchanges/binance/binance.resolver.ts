@@ -1,9 +1,4 @@
-import {
-  BINANCE_ENDPOINTS,
-  ORDER_SIDE,
-  ORDER_TYPE,
-  POSITION_SIDE,
-} from "./binance.config";
+import { BINANCE_ENDPOINTS, ORDER_SIDE, ORDER_TYPE } from "./binance.config";
 import type {
   BinanceAccount,
   BinanceMarket,
@@ -12,10 +7,10 @@ import type {
   BinanceTickerPrice,
 } from "./binance.types";
 import { binance } from "./binance.api";
+import { mapBinancePosition } from "./binance.utils";
 
 import {
   ExchangeName,
-  PositionSide,
   type Position,
   type Account,
   type Balance,
@@ -161,31 +156,9 @@ export const fetchBinanceAccount = async ({
     upnl: parseFloat(data.totalUnrealizedProfit),
   };
 
-  const positions: Position[] = data.positions.map((p) => {
-    const entryPrice = parseFloat(getKV(p, "entryPrice"));
-    const contracts = parseFloat(getKV(p, "positionAmt"));
-    const upnl = parseFloat(getKV(p, "unrealizedProfit"));
-    const pSide = getKV(p, "positionSide");
-
-    const side =
-      (pSide in POSITION_SIDE && POSITION_SIDE[pSide]) ||
-      (contracts > 0 ? PositionSide.Long : PositionSide.Short);
-
-    return {
-      exchange: ExchangeName.BINANCE,
-      accountId: account.id,
-      symbol: p.symbol,
-      side,
-      entryPrice,
-      notional: Math.abs(contracts * entryPrice + upnl),
-      leverage: parseFloat(p.leverage),
-      upnl,
-      rpnl: 0,
-      contracts: Math.abs(contracts),
-      liquidationPrice: 0,
-      isHedged: pSide !== "BOTH",
-    };
-  });
+  const positions: Position[] = data.positions
+    .filter((p) => p.positionAmt !== "0")
+    .map((p) => mapBinancePosition({ position: p, accountId: account.id }));
 
   return {
     balance,
@@ -373,6 +346,29 @@ export const cancelBinanceSymbolOrders = async ({
       symbol,
     },
   });
+};
+
+export const fetchBinanceSymbolPositions = async ({
+  config,
+  account,
+  symbol,
+}: {
+  config: ExchangeConfig;
+  account: Account;
+  symbol: string;
+}) => {
+  const data = await binance<Record<string, any>[]>({
+    url: `${config.PRIVATE_API_URL}${BINANCE_ENDPOINTS.PRIVATE.POSITIONS}`,
+    key: account.apiKey,
+    secret: account.apiSecret,
+    params: { symbol },
+  });
+
+  const positions: Position[] = data.map((p) =>
+    mapBinancePosition({ position: p, accountId: account.id }),
+  );
+
+  return positions;
 };
 
 const getTimeUnitInMs = (unit: string): number => {

@@ -8,6 +8,7 @@ import {
   fetchBinanceOHLCV,
   fetchBinanceOrders,
   fetchBinanceOrdersHistory,
+  fetchBinanceSymbolPositions,
   fetchBinanceTickers,
 } from "./binance.resolver";
 import { BinanceWsPublic } from "./binance.ws-public";
@@ -186,20 +187,6 @@ export class BinanceWorker extends BaseWorker {
         path: `private.${account.id}.balance`,
         value: balance,
       },
-      {
-        type: "update",
-        path: `private.${account.id}.metadata.leverage`,
-        value: Object.fromEntries(
-          supportedPositions.map((p) => [p.symbol, p.leverage]),
-        ),
-      },
-      {
-        type: "update",
-        path: `private.${account.id}.metadata.hedgedPosition`,
-        value: Object.fromEntries(
-          supportedPositions.map((p) => [p.symbol, p.isHedged ?? false]),
-        ),
-      },
     ]);
 
     this.pollBalancePositionsTimeouts[account.id] = setTimeout(
@@ -328,6 +315,47 @@ export class BinanceWorker extends BaseWorker {
     await cancelBinanceSymbolOrders({ config: this.config, account, symbol });
 
     this.emitResponse({ requestId, data: [] });
+  }
+
+  async fetchPositionMetadata({
+    requestId,
+    accountId,
+    symbol,
+  }: {
+    requestId: string;
+    accountId: string;
+    symbol: string;
+  }) {
+    const account = this.accounts.find((a) => a.id === accountId);
+
+    if (!account) {
+      this.error(`No account found for id: ${accountId}`);
+      return;
+    }
+
+    const positions = await fetchBinanceSymbolPositions({
+      config: this.config,
+      account,
+      symbol,
+    });
+
+    const leverage = positions[0]?.leverage ?? 1;
+    const isHedged = positions.some((p) => p.isHedged);
+
+    this.emitChanges([
+      {
+        type: `update`,
+        path: `private.${accountId}.metadata.leverage.${symbol}`,
+        value: leverage,
+      },
+      {
+        type: `update`,
+        path: `private.${accountId}.metadata.hedgedPosition.${symbol}`,
+        value: isHedged,
+      },
+    ]);
+
+    this.emitResponse({ requestId, data: { leverage, isHedged } });
   }
 }
 
