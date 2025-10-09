@@ -104,6 +104,14 @@ export class OkxWorker extends BaseWorker {
   }) {
     this.businessWs?.unlistenOHLCV({ symbol, timeframe });
   }
+
+  listenOrderBook(symbol: string) {
+    this.publicWs?.listenOrderBook(symbol);
+  }
+
+  unlistenOrderBook(symbol: string) {
+    this.publicWs?.unlistenOrderBook(symbol);
+  }
 }
 
 new OkxWorker({

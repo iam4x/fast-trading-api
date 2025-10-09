@@ -5,6 +5,9 @@ import { mapObj } from "~/utils/map-obj.utils";
 import { ReconnectingWebSocket } from "~/utils/reconnecting-websocket.utils";
 import { toUSD } from "~/utils/to-usd.utils";
 import { tryParse } from "~/utils/try-parse.utils";
+import { multiply } from "~/utils/safe-math.utils";
+import { calcOrderBookTotal, sortOrderBook } from "~/utils/orderbook.utils";
+import type { OrderBook } from "~/types/lib.types";
 
 export class OkxWsPublic {
   parent: OkxWorker;
@@ -19,9 +22,6 @@ export class OkxWsPublic {
 
   orderBookTopics = new Set<string>();
   orderBookTimeouts = new Map<string, NodeJS.Timeout>();
-
-  ohlcvTopics = new Set<string>();
-  ohlcvTimeouts = new Map<string, NodeJS.Timeout>();
 
   constructor({ parent }: { parent: OkxWorker }) {
     this.parent = parent;
@@ -107,19 +107,21 @@ export class OkxWsPublic {
       return;
     }
 
-    for (const [channel, handler] of Object.entries(this.messageHandlers)) {
-      if (
-        event.data.includes(`channel":"${channel}`) &&
-        !event.data.includes('event":"subscribe"')
-      ) {
-        const json = tryParse<Record<string, any>>(event.data);
-        if (json) handler(json);
-        break;
-      }
+    const json = tryParse<Record<string, any>>(event.data);
+    if (!json || json.event === "subscribe") return;
+
+    for (const key in this.messageHandlers) {
+      this.messageHandlers[key](json);
     }
   };
 
-  handleTickers = ({ data: [update] }: Record<string, any>) => {
+  handleTickers = (json: Record<string, any>) => {
+    if (json.arg.channel !== "tickers") return;
+
+    const {
+      data: [update],
+    } = json;
+
     const tickerSymbol = tickerSymbolFromId(update.instId);
     const open = parseFloat(update.open24h);
     const last = parseFloat(update.last);
@@ -136,7 +138,13 @@ export class OkxWsPublic {
     });
   };
 
-  handleMarkPrice = ({ data: [update] }: Record<string, any>) => {
+  handleMarkPrice = (json: Record<string, any>) => {
+    if (json.arg.channel !== "mark-price") return;
+
+    const {
+      data: [update],
+    } = json;
+
     const tickerSymbol = tickerSymbolFromId(update.instId);
     this.parent.updateTickerDelta({
       symbol: tickerSymbol,
@@ -144,7 +152,13 @@ export class OkxWsPublic {
     });
   };
 
-  handleIndexTickers = ({ data: [update] }: Record<string, any>) => {
+  handleIndexTickers = (json: Record<string, any>) => {
+    if (json.arg.channel !== "index-tickers") return;
+
+    const {
+      data: [update],
+    } = json;
+
     const tickerSymbol = tickerSymbolFromId(update.instId);
     this.parent.updateTickerDelta({
       symbol: tickerSymbol,
@@ -152,7 +166,13 @@ export class OkxWsPublic {
     });
   };
 
-  handleOpenInterest = ({ data: [update] }: Record<string, any>) => {
+  handleOpenInterest = (json: Record<string, any>) => {
+    if (json.arg.channel !== "open-interest") return;
+
+    const {
+      data: [update],
+    } = json;
+
     const tickerSymbol = tickerSymbolFromId(update.instId);
     this.parent.updateTickerDelta({
       symbol: tickerSymbol,
@@ -160,12 +180,153 @@ export class OkxWsPublic {
     });
   };
 
-  handleFundingRate = ({ data: [update] }: Record<string, any>) => {
+  handleFundingRate = (json: Record<string, any>) => {
+    if (json.arg.channel !== "funding-rate") return;
+
+    const {
+      data: [update],
+    } = json;
+
     const tickerSymbol = tickerSymbolFromId(update.instId);
     this.parent.updateTickerDelta({
       symbol: tickerSymbol,
       fundingRate: parseFloat(update.fundingRate),
     });
+  };
+
+  listenOrderBook = (symbol: string) => {
+    const orderBook: OrderBook = { bids: [], asks: [] };
+    const orderBookTopic = `orderbook.${symbol}`;
+
+    if (this.orderBookTopics.has(orderBookTopic)) return;
+    this.orderBookTopics.add(orderBookTopic);
+
+    const market = this.parent.memory.public.markets[symbol];
+
+    this.messageHandlers[orderBookTopic] = (json: Record<string, any>) => {
+      if (json.arg.channel !== "books" || json.arg.instId !== market.id) {
+        return;
+      }
+
+      if (json.action === "snapshot") {
+        const snapshot = json.data[0];
+
+        orderBook.bids = [];
+        orderBook.asks = [];
+
+        for (const key in snapshot) {
+          if (key !== "asks" && key !== "bids") continue;
+
+          const orders = snapshot[key];
+          orders.forEach((order: [string, string, string, string]) => {
+            orderBook[key].push({
+              price: parseFloat(order[0]),
+              amount: multiply(parseFloat(order[1]), market.precision.amount),
+              total: 0,
+            });
+          });
+        }
+      }
+
+      if (json.action === "update") {
+        const update = json.data[0];
+
+        for (const key in update) {
+          if (key !== "asks" && key !== "bids") continue;
+
+          for (const [rPrice, rAmount] of update[key]) {
+            const price = parseFloat(rPrice);
+            const amount = parseFloat(rAmount);
+
+            const index = orderBook[key].findIndex((o) => o.price === price);
+
+            if (amount === 0 && index !== -1) {
+              orderBook[key].splice(index, 1);
+              return;
+            }
+
+            if (amount !== 0) {
+              if (index === -1) {
+                orderBook[key].push({
+                  price,
+                  amount: multiply(amount, market.precision.amount),
+                  total: 0,
+                });
+                return;
+              }
+
+              orderBook[key][index].amount = multiply(
+                amount,
+                market.precision.amount,
+              );
+            }
+          }
+        }
+      }
+
+      const ticker = this.parent.memory.public.tickers[symbol];
+      const lastPrice = ticker.last ?? 0;
+
+      orderBook.asks = orderBook.asks.filter((a) => a.price >= lastPrice);
+      orderBook.bids = orderBook.bids.filter((b) => b.price <= lastPrice);
+
+      sortOrderBook(orderBook);
+      calcOrderBookTotal(orderBook);
+
+      this.parent.emitOrderBook({ symbol, orderBook });
+    };
+
+    const waitConnectAndSubscribe = () => {
+      if (this.orderBookTimeouts.has(orderBookTopic)) {
+        clearTimeout(this.orderBookTimeouts.get(orderBookTopic));
+        this.orderBookTimeouts.delete(orderBookTopic);
+      }
+
+      if (this.ws?.readyState !== WebSocket.OPEN) {
+        this.orderBookTimeouts.set(
+          orderBookTopic,
+          setTimeout(() => waitConnectAndSubscribe(), 100),
+        );
+        return;
+      }
+
+      this.send({
+        op: "subscribe",
+        args: [
+          {
+            channel: "books",
+            instId: market.id,
+          },
+        ],
+      });
+    };
+
+    waitConnectAndSubscribe();
+  };
+
+  unlistenOrderBook = (symbol: string) => {
+    const orderBookTopic = `orderbook.${symbol}`;
+    const timeout = this.orderBookTimeouts.get(orderBookTopic);
+
+    if (timeout) {
+      clearTimeout(timeout);
+      this.orderBookTimeouts.delete(orderBookTopic);
+    }
+
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.send({
+        op: "unsubscribe",
+        args: [
+          {
+            channel: "books",
+            instId: this.parent.memory.public.tickers[symbol].id,
+          },
+        ],
+      });
+    }
+
+    delete this.messageHandlers[orderBookTopic];
+    this.orderBookTopics.delete(orderBookTopic);
   };
 
   onClose = () => {
