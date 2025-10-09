@@ -6,6 +6,7 @@ import {
   fetchOkxTickers,
 } from "./okx.resolver";
 import { OkxWsPublic } from "./okx.ws-public";
+import { OkxWsBusiness } from "./okx.ws-business";
 
 import { omit } from "~/utils/omit.utils";
 import { DEFAULT_CONFIG } from "~/config";
@@ -14,10 +15,12 @@ import {
   type Account,
   type ExchangeConfig,
   type FetchOHLCVParams,
+  type Timeframe,
 } from "~/types/lib.types";
 
 export class OkxWorker extends BaseWorker {
   publicWs: OkxWsPublic | null = null;
+  businessWs: OkxWsBusiness | null = null;
 
   async start({
     accounts,
@@ -36,6 +39,9 @@ export class OkxWorker extends BaseWorker {
   stop() {
     this.publicWs?.stop();
     this.publicWs = null;
+
+    this.businessWs?.stop();
+    this.businessWs = null;
 
     // for (const key in this.privateWs) {
     //   this.privateWs[key].stop();
@@ -70,6 +76,7 @@ export class OkxWorker extends BaseWorker {
 
     // 2. Start public websocket
     this.publicWs = new OkxWsPublic({ parent: this });
+    this.businessWs = new OkxWsBusiness({ parent: this });
   }
 
   async fetchOHLCV({
@@ -82,6 +89,10 @@ export class OkxWorker extends BaseWorker {
     const id = this.memory.public.tickers[params.symbol].id;
     const candles = await fetchOkxOHLCV({ config: this.config, params, id });
     this.emitResponse({ requestId, data: candles });
+  }
+
+  listenOHLCV({ symbol, timeframe }: { symbol: string; timeframe: Timeframe }) {
+    this.businessWs?.listenOHLCV({ symbol, timeframe });
   }
 }
 
