@@ -48,7 +48,7 @@ export class BybitWsTrading {
   }
 
   listenWebsocket = () => {
-    this.ws = new ReconnectingWebSocket(this.parent.config.WS_TRADE_URL);
+    this.ws = new ReconnectingWebSocket(this.parent.config.WS_TRADE_URL!);
     this.ws.addEventListener("open", this.onOpen);
     this.ws.addEventListener("message", this.onMessage);
     this.ws.addEventListener("close", this.onClose);

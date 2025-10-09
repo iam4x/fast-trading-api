@@ -5,6 +5,7 @@ import type { BaseExchange } from "~/exchanges/base.exchange";
 import { createBinanceExchange } from "~/exchanges/binance/binance.exchange";
 import { createBybitExchange } from "~/exchanges/bybit/bybit.exchange";
 import { createHyperliquidExchange } from "~/exchanges/hyperliquid/hl.exchange";
+import { createOkxExchange } from "~/exchanges/okx/okx.exchange";
 import {
   type FastTradingApiOptions,
   type FetchOHLCVParams,
@@ -59,6 +60,10 @@ export class FastTradingApi {
 
     if (exchangesList.has(ExchangeName.BINANCE)) {
       this.exchanges[ExchangeName.BINANCE] = createBinanceExchange(this);
+    }
+
+    if (exchangesList.has(ExchangeName.OKX)) {
+      this.exchanges[ExchangeName.OKX] = createOkxExchange(this);
     }
 
     await Promise.all(
@@ -122,6 +127,15 @@ export class FastTradingApi {
             await this.exchanges[ExchangeName.BINANCE].addAccounts(
               exchangeAccs,
             );
+          }
+        }
+
+        if (exchangeName === ExchangeName.OKX) {
+          if (!this.exchanges[ExchangeName.OKX]) {
+            this.exchanges[ExchangeName.OKX] = createOkxExchange(this);
+            await this.exchanges[ExchangeName.OKX].start();
+          } else {
+            await this.exchanges[ExchangeName.OKX].addAccounts(exchangeAccs);
           }
         }
       },

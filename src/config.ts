@@ -13,7 +13,6 @@ export const DEFAULT_CONFIG: Record<ExchangeName, ExchangeConfig> = {
     PRIVATE_API_URL: "",
     WS_PUBLIC_URL: "wss://api.hyperliquid.xyz/ws",
     WS_PRIVATE_URL: "wss://api.hyperliquid.xyz/ws",
-    WS_TRADE_URL: "",
     options: {
       builderAddress: "",
       builderFees: 0,
@@ -24,6 +23,12 @@ export const DEFAULT_CONFIG: Record<ExchangeName, ExchangeConfig> = {
     PRIVATE_API_URL: "https://fapi.binance.com",
     WS_PUBLIC_URL: "wss://fstream.binance.com/ws",
     WS_PRIVATE_URL: "wss://fstream.binance.com/ws",
-    WS_TRADE_URL: "",
+  },
+  [ExchangeName.OKX]: {
+    PUBLIC_API_URL: "https://us.okx.com",
+    PRIVATE_API_URL: "https://us.okx.com",
+    WS_PUBLIC_URL: "wss://wsus.okx.com:8443/ws/v5/public",
+    WS_PRIVATE_URL: "wss://wsus.okx.com:8443/ws/v5/private",
+    WS_BUSINESS_URL: "wss://wsus.okx.com:8443/ws/v5/business",
   },
 };

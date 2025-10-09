@@ -11,7 +11,8 @@ export interface ExchangeConfig {
   PRIVATE_API_URL: string;
   WS_PUBLIC_URL: string;
   WS_PRIVATE_URL: string;
-  WS_TRADE_URL: string;
+  WS_TRADE_URL?: string;
+  WS_BUSINESS_URL?: string;
   options?: Record<string, any>;
 }
 
@@ -65,6 +66,7 @@ export enum ExchangeName {
   BYBIT = "bybit",
   HL = "hyperliquid",
   BINANCE = "binance",
+  OKX = "okx",
 }
 
 export interface Account {
@@ -73,6 +75,7 @@ export interface Account {
   apiKey: string;
   apiSecret: string;
   vaultAddress?: string;
+  passphrase?: string;
 }
 
 export interface Balance {
