@@ -1,6 +1,10 @@
 import { BaseWorker } from "../base.worker";
 
-import { fetchOkxMarkets, fetchOkxTickers } from "./okx.resolver";
+import {
+  fetchOkxMarkets,
+  fetchOkxOHLCV,
+  fetchOkxTickers,
+} from "./okx.resolver";
 import { OkxWsPublic } from "./okx.ws-public";
 
 import { omit } from "~/utils/omit.utils";
@@ -9,6 +13,7 @@ import {
   ExchangeName,
   type Account,
   type ExchangeConfig,
+  type FetchOHLCVParams,
 } from "~/types/lib.types";
 
 export class OkxWorker extends BaseWorker {
@@ -65,6 +70,18 @@ export class OkxWorker extends BaseWorker {
 
     // 2. Start public websocket
     this.publicWs = new OkxWsPublic({ parent: this });
+  }
+
+  async fetchOHLCV({
+    requestId,
+    params,
+  }: {
+    requestId: string;
+    params: FetchOHLCVParams;
+  }) {
+    const id = this.memory.public.tickers[params.symbol].id;
+    const candles = await fetchOkxOHLCV({ config: this.config, params, id });
+    this.emitResponse({ requestId, data: candles });
   }
 }
 

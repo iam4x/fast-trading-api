@@ -1,16 +1,19 @@
-import { OKX_ENDPOINTS } from "./okx.config";
+import { INTERVAL, OKX_ENDPOINTS } from "./okx.config";
 import { tickerSymbolFromId } from "./okx.utils";
 
 import { request } from "~/utils/request.utils";
 import {
   ExchangeName,
+  type Candle,
   type ExchangeConfig,
+  type FetchOHLCVParams,
   type Market,
   type Ticker,
 } from "~/types/lib.types";
 import { toUSD } from "~/utils/to-usd.utils";
 import { TICKER_REGEX } from "~/utils/regex.utils";
 import { deepMerge } from "~/utils/deep-merge.utils";
+import { omitUndefined } from "~/utils/omit-undefined.utils";
 
 export const fetchOkxMarkets = async (config: ExchangeConfig) => {
   const { data } = await request<{ data: Record<string, any>[] }>({
@@ -103,4 +106,42 @@ export const fetchOkxTickers = async (config: ExchangeConfig) => {
   );
 
   return tickers;
+};
+
+export const fetchOkxOHLCV = async ({
+  id,
+  config,
+  params,
+}: {
+  id: string | number;
+  config: ExchangeConfig;
+  params: FetchOHLCVParams;
+}) => {
+  const { data } = await request<{ data: Record<string, any> }>({
+    url: `${config.PUBLIC_API_URL}${OKX_ENDPOINTS.PUBLIC.KLINE}`,
+    params: omitUndefined({
+      instId: id,
+      bar: INTERVAL[params.timeframe],
+      limit: params.limit ? Math.min(params.limit, 300) : 300,
+      after: params.to!,
+      before: params.from!,
+    }),
+  });
+
+  const candles: Candle[] = data.map((c: string[]) => {
+    return {
+      symbol: params.symbol,
+      timeframe: params.timeframe,
+      timestamp: parseInt(c[0], 10) / 1000,
+      open: parseFloat(c[1]),
+      high: parseFloat(c[2]),
+      low: parseFloat(c[3]),
+      close: parseFloat(c[4]),
+      volume: parseFloat(c[7]),
+    };
+  });
+
+  candles.sort((a, b) => a.timestamp - b.timestamp);
+
+  return candles;
 };
