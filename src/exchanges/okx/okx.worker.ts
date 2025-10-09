@@ -94,6 +94,16 @@ export class OkxWorker extends BaseWorker {
   listenOHLCV({ symbol, timeframe }: { symbol: string; timeframe: Timeframe }) {
     this.businessWs?.listenOHLCV({ symbol, timeframe });
   }
+
+  unlistenOHLCV({
+    symbol,
+    timeframe,
+  }: {
+    symbol: string;
+    timeframe: Timeframe;
+  }) {
+    this.businessWs?.unlistenOHLCV({ symbol, timeframe });
+  }
 }
 
 new OkxWorker({

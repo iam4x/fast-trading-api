@@ -105,6 +105,38 @@ export class OkxWsBusiness {
     waitConnectAndSubscribe();
   };
 
+  unlistenOHLCV = ({
+    symbol,
+    timeframe,
+  }: {
+    symbol: string;
+    timeframe: Timeframe;
+  }) => {
+    const interval = INTERVAL[timeframe];
+    const ohlcvTopic = `ohlcv.${symbol}.${interval}`;
+    const timeout = this.ohlcvTimeouts.get(ohlcvTopic);
+
+    if (timeout) {
+      clearTimeout(timeout);
+      this.ohlcvTimeouts.delete(ohlcvTopic);
+    }
+
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.send({
+        op: "unsubscribe",
+        args: [
+          {
+            channel: `candle${interval}`,
+            instId: this.parent.memory.public.tickers[symbol].id,
+          },
+        ],
+      });
+    }
+
+    delete this.messageHandlers[ohlcvTopic];
+    this.ohlcvTopics.delete(ohlcvTopic);
+  };
+
   send = (data: string | Record<string, any>) => {
     if (!this.isStopped) {
       this.ws?.send(typeof data === "string" ? data : JSON.stringify(data));
