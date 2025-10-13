@@ -1,5 +1,6 @@
 import type { BinanceWorker } from "./binance.worker";
 import { BINANCE_ENDPOINTS } from "./binance.config";
+import { getBinanceNextFundingTime } from "./binance.utils";
 
 import { tryParse } from "~/utils/try-parse.utils";
 import { genIntId } from "~/utils/gen-id.utils";
@@ -98,6 +99,7 @@ export class BinanceWsPublic {
             percentage: parseFloat(ticker.P),
             volume: parseFloat(ticker.v),
             quoteVolume: parseFloat(ticker.q),
+            nextFundingTime: getBinanceNextFundingTime(),
           });
         }
       }

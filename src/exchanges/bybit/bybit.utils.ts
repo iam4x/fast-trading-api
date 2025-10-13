@@ -47,6 +47,7 @@ export const mapBybitTicker = (t: BybitTicker): Ticker => {
     index: parseFloat(t.indexPrice),
     percentage: parseFloat(t.price24hPcnt) * 100,
     openInterest: parseFloat(t.openInterest),
+    nextFundingTime: parseFloat(t.nextFundingTime),
     fundingRate: parseFloat(t.fundingRate),
     volume: parseFloat(t.volume24h),
     quoteVolume: parseFloat(t.volume24h) * parseFloat(t.lastPrice),

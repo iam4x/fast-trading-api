@@ -107,6 +107,9 @@ export class BybitWsPublic {
         if (d.fundingRate) t.fundingRate = parseFloat(d.fundingRate);
         if (d.volume24h) t.volume = parseFloat(d.volume24h);
         if (d.turnover24h) t.quoteVolume = parseFloat(d.turnover24h);
+        if (d.nextFundingTime) {
+          t.nextFundingTime = parseFloat(d.nextFundingTime);
+        }
 
         this.parent.updateTickerDelta(t);
         return;

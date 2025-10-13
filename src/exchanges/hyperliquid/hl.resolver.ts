@@ -86,6 +86,7 @@ export const fetchHLMarketsAndTickers = async (config: ExchangeConfig) => {
         mark: parseFloat(t.markPx),
         index: parseFloat(t.oraclePx),
         percentage,
+        nextFundingTime: +new Date(Math.ceil(Date.now() / 3600000) * 3600000),
         openInterest: parseFloat(t.openInterest),
         fundingRate: parseFloat(t.funding),
         volume: parseFloat(t.dayBaseVlm),

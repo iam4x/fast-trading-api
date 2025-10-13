@@ -252,6 +252,10 @@ export class HyperLiquidWsPublic {
           t.percentage = ((last - prevDay) / prevDay) * 100;
         }
 
+        t.nextFundingTime = +new Date(
+          Math.ceil(Date.now() / 3600000) * 3600000,
+        );
+
         this.parent.updateTickerDelta(t);
       }
     }

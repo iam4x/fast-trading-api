@@ -94,6 +94,7 @@ export interface Ticker {
   index: number;
   percentage: number;
   openInterest: number;
+  nextFundingTime: number;
   fundingRate: number;
   volume: number;
   quoteVolume: number;

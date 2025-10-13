@@ -7,7 +7,7 @@ import type {
   BinanceTickerPrice,
 } from "./binance.types";
 import { binance } from "./binance.api";
-import { mapBinancePosition } from "./binance.utils";
+import { getBinanceNextFundingTime, mapBinancePosition } from "./binance.utils";
 
 import {
   ExchangeName,
@@ -149,6 +149,7 @@ export const fetchBinanceTickers = async (config: ExchangeConfig) => {
         fundingRate: parseFloat(getKV(price, "lastFundingRate")),
         volume: parseFloat(daily.volume),
         quoteVolume: parseFloat(getKV(daily, "quoteVolume")),
+        nextFundingTime: getBinanceNextFundingTime(),
         openInterest: 0, // Binance doesn't provides that in all tickers data
       };
 

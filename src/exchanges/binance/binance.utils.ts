@@ -34,3 +34,24 @@ export const mapBinancePosition = ({
     isHedged: pSide !== "BOTH",
   };
 };
+
+export const getBinanceNextFundingTime = () => {
+  // Funding payments occur every 8 hours at 00:00 UTC, 08:00 UTC, and 16:00 UTC for all Binance Futures perpetual contracts.
+  const now = Date.now();
+  const nowDate = new Date(now);
+
+  const year = nowDate.getUTCFullYear();
+  const month = nowDate.getUTCMonth();
+  const day = nowDate.getUTCDate();
+
+  const startOfDayUtcMs = Date.UTC(year, month, day, 0, 0, 0, 0);
+  const scheduleHours = [0, 8, 16];
+
+  for (const hour of scheduleHours) {
+    const scheduledMs = startOfDayUtcMs + hour * 60 * 60 * 1000;
+    if (now <= scheduledMs) return scheduledMs;
+  }
+
+  // If all today's funding times passed, next one is tomorrow 00:00 UTC
+  return startOfDayUtcMs + 24 * 60 * 60 * 1000;
+};

@@ -58,6 +58,7 @@ describe("MemoryStore", () => {
         fundingRate: 0.0001,
         volume: 5000,
         quoteVolume: 250000000,
+        nextFundingTime: +new Date(),
       };
 
       store.applyChanges([
@@ -90,6 +91,7 @@ describe("MemoryStore", () => {
         fundingRate: 0.0001,
         volume: 5000,
         quoteVolume: 250000000,
+        nextFundingTime: +new Date(),
       };
 
       const ticker2: Ticker = {
@@ -107,6 +109,7 @@ describe("MemoryStore", () => {
         fundingRate: 0.0002,
         volume: 10000,
         quoteVolume: 30000000,
+        nextFundingTime: +new Date(),
       };
 
       store.applyChanges([
@@ -503,6 +506,7 @@ describe("MemoryStore", () => {
         fundingRate: 0.0001,
         volume: 5000,
         quoteVolume: 250000000,
+        nextFundingTime: +new Date(),
       };
 
       // Set up initial state
@@ -547,6 +551,7 @@ describe("MemoryStore", () => {
         fundingRate: 0.0002,
         volume: 10000,
         quoteVolume: 30000000,
+        nextFundingTime: +new Date(),
       };
 
       // Apply mixed changes in one call
