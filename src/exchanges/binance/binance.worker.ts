@@ -35,7 +35,7 @@ import {
   type Position,
   type Timeframe,
 } from "~/types/lib.types";
-import { DEFAULT_CONFIG } from "~/config";
+import { DEFAULT_EXCHANGES_CONFIG } from "~/exchanges/exchanges.config";
 import { groupBy } from "~/utils/group-by.utils";
 import { mapObj } from "~/utils/map-obj.utils";
 import { chunk } from "~/utils/chunk.utils";
@@ -678,6 +678,6 @@ export class BinanceWorker extends BaseWorker {
 
 new BinanceWorker({
   name: ExchangeName.BINANCE,
-  config: DEFAULT_CONFIG[ExchangeName.BINANCE],
+  config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BINANCE],
   parent: self,
 });

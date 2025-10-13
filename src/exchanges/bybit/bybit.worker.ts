@@ -44,7 +44,7 @@ import { omit } from "~/utils/omit.utils";
 import { toUSD } from "~/utils/to-usd.utils";
 import { sumBy } from "~/utils/sum-by.utils";
 import { genId } from "~/utils/gen-id.utils";
-import { DEFAULT_CONFIG } from "~/config";
+import { DEFAULT_EXCHANGES_CONFIG } from "~/exchanges/exchanges.config";
 
 export class BybitWorker extends BaseWorker {
   publicWs: BybitWsPublic | null = null;
@@ -765,6 +765,6 @@ export class BybitWorker extends BaseWorker {
 
 new BybitWorker({
   name: ExchangeName.BYBIT,
-  config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+  config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
   parent: self,
 });

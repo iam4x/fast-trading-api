@@ -9,7 +9,7 @@ import {
   OrderType,
 } from "~/types/lib.types";
 import { FastTradingApi } from "~/lib/fast-trading-api.lib";
-import { DEFAULT_CONFIG } from "~/config";
+import { DEFAULT_EXCHANGES_CONFIG } from "~/exchanges/exchanges.config";
 
 const moduleMocker = {
   mocks: [] as Record<string, any>[],
@@ -76,7 +76,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     expect(createWorker).toHaveBeenCalled();
@@ -88,7 +88,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     await exchange.start();
@@ -113,7 +113,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     exchange.stop();
@@ -133,7 +133,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     const accounts: Account[] = [
@@ -155,7 +155,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     await exchange.fetchOHLCV({
@@ -172,7 +172,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     const originalPostMessage = worker.postMessage;
@@ -220,7 +220,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     const originalPostMessage = worker.postMessage;
@@ -268,7 +268,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     const originalPostMessage = worker.postMessage;
@@ -312,7 +312,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     const originalPostMessage = worker.postMessage;
@@ -354,7 +354,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     const originalPostMessage = worker.postMessage;
@@ -398,7 +398,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     worker.postMessage = mock(() => {});
@@ -426,7 +426,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     worker.postMessage = mock(() => {});
@@ -455,7 +455,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     worker.postMessage = mock(() => {});
@@ -481,7 +481,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     worker.postMessage = mock(() => {});
@@ -506,7 +506,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     const callback = mock(() => {});
@@ -525,7 +525,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     const callback = mock(() => {});
@@ -547,7 +547,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent: new FastTradingApi({ accounts: [] }),
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     const resolver = mock(() => {});
@@ -570,7 +570,7 @@ describe("BaseExchange", () => {
       name: ExchangeName.BYBIT,
       parent,
       createWorker,
-      config: DEFAULT_CONFIG[ExchangeName.BYBIT],
+      config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.BYBIT],
     });
 
     const handleCandle = mock(() => {});

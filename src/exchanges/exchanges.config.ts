@@ -1,6 +1,6 @@
-import { ExchangeName, type ExchangeConfig } from "./types";
+import { ExchangeName, type ExchangeConfig } from "../types";
 
-export const DEFAULT_CONFIG: Record<ExchangeName, ExchangeConfig> = {
+export const DEFAULT_EXCHANGES_CONFIG: Record<ExchangeName, ExchangeConfig> = {
   [ExchangeName.BYBIT]: {
     PUBLIC_API_URL: "https://api.bybit.com",
     PRIVATE_API_URL: "https://api.bybit.com",

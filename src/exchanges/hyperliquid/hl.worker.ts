@@ -10,7 +10,7 @@ import {
 import { HyperLiquidWsPublic } from "./hl.ws-public";
 import { HyperLiquidWsPrivate } from "./hl.ws-private";
 
-import { DEFAULT_CONFIG } from "~/config";
+import { DEFAULT_EXCHANGES_CONFIG } from "~/exchanges/exchanges.config";
 import {
   ExchangeName,
   type Account,
@@ -409,6 +409,6 @@ export class HyperLiquidWorker extends BaseWorker {
 
 new HyperLiquidWorker({
   name: ExchangeName.HL,
-  config: DEFAULT_CONFIG[ExchangeName.HL],
+  config: DEFAULT_EXCHANGES_CONFIG[ExchangeName.HL],
   parent: self,
 });

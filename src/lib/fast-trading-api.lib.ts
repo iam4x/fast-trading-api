@@ -1,6 +1,6 @@
 import { MemoryStore } from "./store.lib";
 
-import { DEFAULT_CONFIG } from "~/config";
+import { DEFAULT_EXCHANGES_CONFIG } from "~/exchanges/exchanges.config";
 import type { BaseExchange } from "~/exchanges/base.exchange";
 import { createBinanceExchange } from "~/exchanges/binance/binance.exchange";
 import { createBybitExchange } from "~/exchanges/bybit/bybit.exchange";
@@ -36,7 +36,7 @@ export class FastTradingApi {
 
   constructor({ accounts, config, store }: FastTradingApiOptions) {
     this.accounts = accounts;
-    this.config = deepMerge(DEFAULT_CONFIG, config);
+    this.config = deepMerge(DEFAULT_EXCHANGES_CONFIG, config);
     this.store = store ?? new MemoryStore();
   }
 
