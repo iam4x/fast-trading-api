@@ -1,5 +1,6 @@
 import { retry } from "./retry.utils";
 import { stringify } from "./query-string.utils";
+import { omitUndefined } from "./omit-undefined.utils";
 
 export type RequestParams = Record<
   string,
@@ -23,10 +24,13 @@ export type Request = {
 
 export const request = async <T>(req: Request) => {
   return retry(async () => {
-    const url = req.params ? `${req.url}?${stringify(req.params)}` : req.url;
+    const url = req.params
+      ? `${req.url}?${stringify(omitUndefined(req.params))}`
+      : req.url;
+
     const response = await fetch(url, {
       method: req.method ?? "GET",
-      body: req.body ? JSON.stringify(req.body) : undefined,
+      body: req.body ? JSON.stringify(omitUndefined(req.body)) : undefined,
       headers: {
         "content-type": "application/json",
         ...(req.headers || {}),
