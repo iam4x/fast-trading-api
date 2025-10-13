@@ -27,7 +27,7 @@ export class HyperLiquidWsPublic {
   constructor({ parent }: { parent: HyperLiquidWorker }) {
     this.parent = parent;
     this.messageHandlers.pong = this.handlePong;
-    this.messageHandlers.activeAssetCtx = this.handleactiveAssetCtx;
+    this.messageHandlers.activeAssetCtx = this.handleActiveAssets;
     this.listenWebSocket();
   }
 
@@ -220,7 +220,7 @@ export class HyperLiquidWsPublic {
     }
   };
 
-  handleactiveAssetCtx = (json: Record<string, any>) => {
+  handleActiveAssets = (json: Record<string, any>) => {
     if (json.channel === "activeAssetCtx") {
       const {
         data: { coin, ctx },
