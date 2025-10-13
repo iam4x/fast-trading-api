@@ -106,6 +106,7 @@ export interface Market {
   base: string;
   quote: string;
   active: boolean;
+  fundingInterval: number;
   precision: {
     amount: number;
     price: number;

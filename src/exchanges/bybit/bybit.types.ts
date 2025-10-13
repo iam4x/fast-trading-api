@@ -5,6 +5,7 @@ export type BybitInstrument = {
   settleCoin: string;
   contractType: string;
   status: string;
+  fundingInterval: number;
   lotSizeFilter: {
     qtyStep: string;
     minOrderQty: string;

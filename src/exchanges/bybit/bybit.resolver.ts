@@ -56,6 +56,7 @@ export const fetchBybitMarkets = async (config: ExchangeConfig) => {
         base: market.baseCoin,
         quote: market.quoteCoin,
         active: market.status === "Trading",
+        fundingInterval: market.fundingInterval,
         precision: {
           amount: parseFloat(market.lotSizeFilter.qtyStep),
           price: parseFloat(market.priceFilter.tickSize),

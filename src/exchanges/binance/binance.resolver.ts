@@ -58,6 +58,7 @@ export const fetchBinanceMarkets = async (config: ExchangeConfig) => {
         base: getKV(market, "baseAsset"),
         quote: getKV(market, "quoteAsset"),
         active: market.status === "TRADING",
+        fundingInterval: 480,
         precision: {
           amount: parseFloat(getKV(amt, "stepSize")),
           price: parseFloat(getKV(p, "tickSize")),

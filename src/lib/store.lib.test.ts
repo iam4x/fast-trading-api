@@ -617,6 +617,7 @@ describe("MemoryStore", () => {
             base: "BTC",
             quote: "USDT",
             active: true,
+            fundingInterval: 60,
             precision: { amount: 8, price: 2 },
             limits: {
               amount: { min: 0.001, max: 100, maxMarket: 50 },

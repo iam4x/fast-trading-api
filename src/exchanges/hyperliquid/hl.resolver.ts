@@ -45,6 +45,7 @@ export const fetchHLMarketsAndTickers = async (config: ExchangeConfig) => {
       base: m.name,
       quote: "USDC",
       active: true,
+      fundingInterval: 60,
       precision: {
         amount: sizeDecimals,
         price: priceDecimals,
