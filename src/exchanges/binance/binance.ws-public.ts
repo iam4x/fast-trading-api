@@ -1,10 +1,11 @@
+import { ReconnectingWebSocket } from "@iam4x/reconnecting-websocket";
+
 import type { BinanceWorker } from "./binance.worker";
 import { BINANCE_ENDPOINTS } from "./binance.config";
 import { getBinanceNextFundingTime } from "./binance.utils";
 
 import { tryParse } from "~/utils/try-parse.utils";
 import { genIntId } from "~/utils/gen-id.utils";
-import { ReconnectingWebSocket } from "~/utils/reconnecting-websocket.utils";
 import type { Candle, OrderBook, Timeframe } from "~/types/lib.types";
 import { request } from "~/utils/request.utils";
 import { calcOrderBookTotal, sortOrderBook } from "~/utils/orderbook.utils";

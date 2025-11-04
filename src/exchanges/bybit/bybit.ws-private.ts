@@ -1,3 +1,5 @@
+import { ReconnectingWebSocket } from "@iam4x/reconnecting-websocket";
+
 import { bybitWebsocketAuth } from "./bybit.api";
 import type {
   BybitBalance,
@@ -10,7 +12,6 @@ import type { BybitWorker } from "./bybit.worker";
 import { partition } from "~/utils/partition.utils";
 import { uniqBy } from "~/utils/uniq-by.utils";
 import { PositionSide, type Account } from "~/types/lib.types";
-import { ReconnectingWebSocket } from "~/utils/reconnecting-websocket.utils";
 import { tryParse } from "~/utils/try-parse.utils";
 
 export class BybitWsPrivate {

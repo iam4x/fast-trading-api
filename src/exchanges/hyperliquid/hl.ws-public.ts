@@ -1,8 +1,9 @@
+import { ReconnectingWebSocket } from "@iam4x/reconnecting-websocket";
+
 import type { HyperLiquidWorker } from "./hl.worker";
 import type { HLActiveAssetCtxWs } from "./hl.types";
 
 import type { Candle, OrderBook, Ticker, Timeframe } from "~/types/lib.types";
-import { ReconnectingWebSocket } from "~/utils/reconnecting-websocket.utils";
 import { calcOrderBookTotal, sortOrderBook } from "~/utils/orderbook.utils";
 import { tryParse } from "~/utils/try-parse.utils";
 

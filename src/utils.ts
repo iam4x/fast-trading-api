@@ -17,7 +17,6 @@ export * from "./utils/partition.utils";
 export * from "./utils/promise.utils";
 export * from "./utils/query-string.utils";
 export * from "./utils/random.utils";
-export * from "./utils/reconnecting-websocket.utils";
 export * from "./utils/regex.utils";
 export * from "./utils/request.utils";
 export * from "./utils/retry.utils";

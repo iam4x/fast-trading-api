@@ -1,3 +1,5 @@
+import { ReconnectingWebSocket } from "@iam4x/reconnecting-websocket";
+
 import { bybitWebsocketAuth } from "./bybit.api";
 import { BROKER_ID, RECV_WINDOW } from "./bybit.config";
 import type {
@@ -14,7 +16,6 @@ import type { Account, Order } from "~/types/lib.types";
 import { genId } from "~/utils/gen-id.utils";
 import { adjust } from "~/utils/safe-math.utils";
 import { sleep } from "~/utils/sleep.utils";
-import { ReconnectingWebSocket } from "~/utils/reconnecting-websocket.utils";
 import { tryParse } from "~/utils/try-parse.utils";
 
 type Data = {

@@ -1,3 +1,5 @@
+import { ReconnectingWebSocket } from "@iam4x/reconnecting-websocket";
+
 import { INTERVAL } from "./bybit.config";
 import type { BybitTicker } from "./bybit.types";
 import { mapBybitTicker } from "./bybit.utils";
@@ -10,7 +12,6 @@ import {
   type Ticker,
   type Timeframe,
 } from "~/types/lib.types";
-import { ReconnectingWebSocket } from "~/utils/reconnecting-websocket.utils";
 import { mapObj } from "~/utils/map-obj.utils";
 import { tryParse } from "~/utils/try-parse.utils";
 

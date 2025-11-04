@@ -1,3 +1,5 @@
+import { ReconnectingWebSocket } from "@iam4x/reconnecting-websocket";
+
 import type { BinanceWorker } from "./binance.worker";
 import {
   fetchBinanceListenkey,
@@ -13,7 +15,6 @@ import {
   PositionSide,
   type Position,
 } from "~/types/lib.types";
-import { ReconnectingWebSocket } from "~/utils/reconnecting-websocket.utils";
 import { tryParse } from "~/utils/try-parse.utils";
 import { genId, genIntId } from "~/utils/gen-id.utils";
 import { subtract } from "~/utils/safe-math.utils";
