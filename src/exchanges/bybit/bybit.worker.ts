@@ -52,6 +52,8 @@ export class BybitWorker extends BaseWorker {
   tradingWs: Record<Account["id"], BybitWsTrading> = {};
 
   pollBalanceTimeouts: Record<Account["id"], NodeJS.Timeout> = {};
+  isBufferingFills: Record<Account["id"], boolean> = {};
+  bufferedFillEvents: Record<Account["id"], BybitOrder[]> = {};
 
   async start({
     accounts,
@@ -225,6 +227,7 @@ export class BybitWorker extends BaseWorker {
       this.privateWs[account.id].flushOrderBuffer();
 
       // Then we fetch orders history, its not as essential as orders
+      this.startFillsBuffering(account.id);
       const ordersHistory = await fetchBybitOrdersHistory({
         config: this.config,
         account,
@@ -241,6 +244,8 @@ export class BybitWorker extends BaseWorker {
           value: ordersHistory,
         },
       ]);
+
+      this.flushFillsBuffer(account.id);
     }
 
     if (requestId) {
@@ -305,6 +310,7 @@ export class BybitWorker extends BaseWorker {
 
       const price = parseFloat(bybitOrder.price);
       const amount = parseFloat(bybitOrder.qty);
+      const shouldBufferFills = this.isBufferingFills[accountId];
 
       if (bybitOrder.orderStatus === "PartiallyFilled") {
         // False positive when order is replaced
@@ -316,32 +322,37 @@ export class BybitWorker extends BaseWorker {
         bybitOrder.orderStatus === "Filled" ||
         bybitOrder.orderStatus === "PartiallyFilled"
       ) {
-        const existingOrder = this.memory.private[accountId].orders.find(
-          (o) => o.id === orders[0].id,
-        );
+        if (shouldBufferFills) {
+          this.bufferedFillEvents[accountId] ??= [];
+          this.bufferedFillEvents[accountId].push(bybitOrder);
+        } else {
+          const existingOrder = this.memory.private[accountId].orders.find(
+            (o) => o.id === orders[0].id,
+          );
 
-        const amount = existingOrder
-          ? subtract(parseFloat(bybitOrder.cumExecQty), existingOrder.filled)
-          : parseFloat(bybitOrder.cumExecQty);
+          const amount = existingOrder
+            ? subtract(parseFloat(bybitOrder.cumExecQty), existingOrder.filled)
+            : parseFloat(bybitOrder.cumExecQty);
 
-        this.emitChanges([
-          {
-            type: "update",
-            path: `private.${accountId}.notifications.${this.memory.private[accountId].notifications.length}`,
-            value: {
-              id: genId(),
-              accountId,
-              type: "order_fill",
-              data: {
-                id: orders[0].id,
-                symbol: orders[0].symbol,
-                side: orders[0].side,
-                price: orders[0].price || "MARKET",
-                amount,
+          this.emitChanges([
+            {
+              type: "update",
+              path: `private.${accountId}.notifications.${this.memory.private[accountId].notifications.length}`,
+              value: {
+                id: genId(),
+                accountId,
+                type: "order_fill",
+                data: {
+                  id: orders[0].id,
+                  symbol: orders[0].symbol,
+                  side: orders[0].side,
+                  price: orders[0].price || "MARKET",
+                  amount,
+                },
               },
             },
-          },
-        ]);
+          ]);
+        }
       }
 
       if (
@@ -376,15 +387,17 @@ export class BybitWorker extends BaseWorker {
       }
 
       if (bybitOrder.orderStatus === "Filled") {
-        const fillsLength = this.memory.private[accountId].fills.length;
+        if (!shouldBufferFills) {
+          const fillsLength = this.memory.private[accountId].fills.length;
 
-        this.emitChanges([
-          {
-            type: "update",
-            path: `private.${accountId}.fills.${fillsLength}`,
-            value: mapBybitFill(bybitOrder),
-          },
-        ]);
+          this.emitChanges([
+            {
+              type: "update",
+              path: `private.${accountId}.fills.${fillsLength}`,
+              value: mapBybitFill(bybitOrder),
+            },
+          ]);
+        }
       }
 
       if (
@@ -416,6 +429,84 @@ export class BybitWorker extends BaseWorker {
         }));
 
         this.emitChanges([...updateOrdersChanges, ...addOrdersChanges]);
+      }
+    }
+  }
+
+  startFillsBuffering(accountId: Account["id"]) {
+    this.isBufferingFills[accountId] = true;
+    this.bufferedFillEvents[accountId] = [];
+  }
+
+  flushFillsBuffer(accountId: Account["id"]) {
+    const buffered = this.bufferedFillEvents[accountId] ?? [];
+    this.bufferedFillEvents[accountId] = [];
+    this.isBufferingFills[accountId] = false;
+
+    for (const bybitOrder of buffered) {
+      if (
+        bybitOrder.orderStatus !== "Filled" &&
+        bybitOrder.orderStatus !== "PartiallyFilled"
+      ) {
+        continue;
+      }
+
+      const orders = mapBybitOrder({ accountId, order: bybitOrder });
+      const price = parseFloat(bybitOrder.price);
+      const amount = parseFloat(bybitOrder.qty);
+
+      if (bybitOrder.orderStatus === "PartiallyFilled") {
+        if (price <= 0 && amount <= 0) continue;
+      }
+
+      const existingOrder = this.memory.private[accountId].orders.find(
+        (o) => o.id === orders[0].id,
+      );
+
+      const filledAmount = existingOrder
+        ? subtract(parseFloat(bybitOrder.cumExecQty), existingOrder.filled)
+        : parseFloat(bybitOrder.cumExecQty);
+
+      this.emitChanges([
+        {
+          type: "update",
+          path: `private.${accountId}.notifications.${this.memory.private[accountId].notifications.length}`,
+          value: {
+            id: genId(),
+            accountId,
+            type: "order_fill",
+            data: {
+              id: orders[0].id,
+              symbol: orders[0].symbol,
+              side: orders[0].side,
+              price: orders[0].price || "MARKET",
+              amount: filledAmount,
+            },
+          },
+        },
+      ]);
+
+      if (bybitOrder.orderStatus === "Filled") {
+        const fill = mapBybitFill(bybitOrder);
+        const hasFill = this.memory.private[accountId].fills.some(
+          (existingFill) =>
+            existingFill.symbol === fill.symbol &&
+            existingFill.side === fill.side &&
+            existingFill.price === fill.price &&
+            existingFill.amount === fill.amount &&
+            existingFill.timestamp === fill.timestamp,
+        );
+
+        if (!hasFill) {
+          const fillsLength = this.memory.private[accountId].fills.length;
+          this.emitChanges([
+            {
+              type: "update",
+              path: `private.${accountId}.fills.${fillsLength}`,
+              value: fill,
+            },
+          ]);
+        }
       }
     }
   }
