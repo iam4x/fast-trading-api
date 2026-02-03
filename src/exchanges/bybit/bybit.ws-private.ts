@@ -18,6 +18,8 @@ export class BybitWsPrivate {
   parent: BybitWorker;
   isStopped = false;
   isListening = false;
+  isBufferingOrders = false;
+  bufferedOrderEvents: BybitOrder[][] = [];
 
   ws: ReconnectingWebSocket | null = null;
   interval: NodeJS.Timeout | null = null;
@@ -43,6 +45,28 @@ export class BybitWsPrivate {
     // because we don't want to handle messages before fetching initial data
     // but we still want to initiate the connection
     this.isListening = true;
+  };
+
+  startOrderBuffering = () => {
+    this.isBufferingOrders = true;
+  };
+
+  flushOrderBuffer = () => {
+    if (this.bufferedOrderEvents.length === 0) {
+      this.isBufferingOrders = false;
+      return;
+    }
+
+    const buffered = this.bufferedOrderEvents;
+    this.bufferedOrderEvents = [];
+    this.isBufferingOrders = false;
+
+    for (const bybitOrders of buffered) {
+      this.parent.updateAccountOrders({
+        accountId: this.account.id,
+        bybitOrders,
+      });
+    }
   };
 
   onOpen = async () => {
@@ -96,6 +120,11 @@ export class BybitWsPrivate {
 
     if (parsed.topic === "order.linear") {
       const data = parsed.data as BybitOrder[];
+      if (this.isBufferingOrders) {
+        this.bufferedOrderEvents.push(data);
+        return;
+      }
+
       this.parent.updateAccountOrders({
         accountId: this.account.id,
         bybitOrders: data,

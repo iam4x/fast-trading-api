@@ -190,6 +190,8 @@ export class BybitWorker extends BaseWorker {
 
       // We delay fetch orders, as its no mandatory to start trading
       // TODO: replay orders update received after initial orders data?
+      this.privateWs[account.id].startOrderBuffering();
+
       let hasEmittedOrders = false;
       const orders = await fetchBybitOrders({
         config: this.config,
@@ -219,6 +221,8 @@ export class BybitWorker extends BaseWorker {
           },
         ]);
       }
+
+      this.privateWs[account.id].flushOrderBuffer();
 
       // Then we fetch orders history, its not as essential as orders
       const ordersHistory = await fetchBybitOrdersHistory({
