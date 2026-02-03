@@ -180,14 +180,17 @@ export const fetchBybitSymbolPositions = async ({
 export const fetchBybitOrders = async ({
   account,
   config,
+  onOrdersUpdate,
 }: {
   config: ExchangeConfig;
   account: Account;
+  onOrdersUpdate?: (orders: Order[]) => void;
 }) => {
-  const recursiveFetch = async (
-    cursor: string = "",
-    orders: BybitOrder[] = [],
-  ) => {
+  const orders: Order[] = [];
+  let cursor = "";
+  let hasMore = true;
+
+  while (hasMore) {
     const json = await bybit<{
       result: { list: BybitOrder[]; nextPageCursor?: string };
     }>({
@@ -205,25 +208,22 @@ export const fetchBybitOrders = async ({
     });
 
     const ordersList = Array.isArray(json.result.list) ? json.result.list : [];
+    const mappedOrders = ordersList.flatMap((o) =>
+      mapBybitOrder({ accountId: account.id, order: o }),
+    );
 
-    if (ordersList.length !== 50) {
-      return orders.concat(ordersList);
+    if (mappedOrders.length > 0) {
+      orders.push(...mappedOrders);
+      onOrdersUpdate?.(orders);
     }
 
-    if (json.result.nextPageCursor) {
-      return recursiveFetch(
-        json.result.nextPageCursor,
-        orders.concat(ordersList),
-      );
+    if (ordersList.length !== 50 || !json.result.nextPageCursor) {
+      hasMore = false;
+      continue;
     }
 
-    return ordersList;
-  };
-
-  const bybitOrders: BybitOrder[] = await recursiveFetch();
-  const orders: Order[] = bybitOrders.flatMap((o) =>
-    mapBybitOrder({ accountId: account.id, order: o }),
-  );
+    cursor = json.result.nextPageCursor;
+  }
 
   return orders;
 };

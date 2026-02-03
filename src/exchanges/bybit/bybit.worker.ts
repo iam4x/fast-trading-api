@@ -190,22 +190,35 @@ export class BybitWorker extends BaseWorker {
 
       // We delay fetch orders, as its no mandatory to start trading
       // TODO: replay orders update received after initial orders data?
+      let hasEmittedOrders = false;
       const orders = await fetchBybitOrders({
         config: this.config,
         account,
+        onOrdersUpdate: (partialOrders) => {
+          hasEmittedOrders = true;
+          this.emitChanges([
+            {
+              type: "update",
+              path: `private.${account.id}.orders`,
+              value: partialOrders,
+            },
+          ]);
+        },
       });
 
       this.log(
         `Loaded ${orders.length} Bybit active orders for account [${account.id}]`,
       );
 
-      this.emitChanges([
-        {
-          type: "update",
-          path: `private.${account.id}.orders`,
-          value: orders,
-        },
-      ]);
+      if (!hasEmittedOrders) {
+        this.emitChanges([
+          {
+            type: "update",
+            path: `private.${account.id}.orders`,
+            value: orders,
+          },
+        ]);
+      }
 
       // Then we fetch orders history, its not as essential as orders
       const ordersHistory = await fetchBybitOrdersHistory({
