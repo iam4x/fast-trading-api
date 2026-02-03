@@ -9,6 +9,7 @@ import { inverseObj } from "~/utils/inverse-obj.utils";
 
 export const RECV_WINDOW = 5000;
 export const BROKER_ID = "Gi000266";
+export const ORDER_BOOK_DEPTH = 1000;
 
 export const BYBIT_ENDPOINTS = {
   PUBLIC: {

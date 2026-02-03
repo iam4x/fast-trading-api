@@ -1,6 +1,6 @@
 import { ReconnectingWebSocket } from "@iam4x/reconnecting-websocket";
 
-import { INTERVAL } from "./bybit.config";
+import { INTERVAL, ORDER_BOOK_DEPTH } from "./bybit.config";
 import type { BybitTicker } from "./bybit.types";
 import { mapBybitTicker } from "./bybit.utils";
 import type { BybitWorker } from "./bybit.worker";
@@ -193,7 +193,7 @@ export class BybitWsPublic {
 
   listenOrderBook(symbol: string) {
     const orderBook: OrderBook = { bids: [], asks: [] };
-    const orderBookTopic = `orderbook.500.${symbol}`;
+    const orderBookTopic = `orderbook.${ORDER_BOOK_DEPTH}.${symbol}`;
 
     if (this.orderBookTopics.has(orderBookTopic)) return;
     this.orderBookTopics.add(orderBookTopic);
@@ -285,7 +285,7 @@ export class BybitWsPublic {
   }
 
   unlistenOrderBook(symbol: string) {
-    const orderBookTopic = `orderbook.500.${symbol}`;
+    const orderBookTopic = `orderbook.${ORDER_BOOK_DEPTH}.${symbol}`;
     const timeout = this.orderBookTimeouts.get(orderBookTopic);
 
     if (timeout) {
